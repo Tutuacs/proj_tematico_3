@@ -1,42 +1,55 @@
-# client
+# Frontend (Client)
 
-This template should help get you started developing with Vue 3 in Vite.
+Aplicação frontend em Vue 3 + Vite.
 
-## Recommended IDE Setup
+## Pré-requisitos
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+- Node.js instalado (compatível com `^20.19.0` ou `>=22.12.0`)
+- pnpm instalado
 
-## Recommended Browser Setup
+Instalar o pnpm (se necessário):
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+```bash
+npm install -g pnpm
+```
 
-## Type Support for `.vue` Imports in TS
+## Instalação
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+Execute dentro da pasta `client/`:
 
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
-
-```sh
+```bash
+cd client
 pnpm install
 ```
 
-### Compile and Hot-Reload for Development
+## Rodar em desenvolvimento
 
-```sh
+Dentro de `client/`:
+
+```bash
 pnpm dev
 ```
 
-### Type-Check, Compile and Minify for Production
+## Build de produção
 
-```sh
+Dentro de `client/`:
+
+```bash
 pnpm build
+```
+
+## Preview local da build
+
+Dentro de `client/`:
+
+```bash
+pnpm preview
+```
+
+## Fluxo rápido (resumo)
+
+```bash
+cd client
+pnpm install
+pnpm dev
 ```
