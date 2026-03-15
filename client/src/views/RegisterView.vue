@@ -14,7 +14,6 @@ import { useAuthStore } from "@/stores/auth";
 import type { RegisterPayload } from "@/types/auth";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
-import { toast } from "vue-sonner";
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -56,11 +55,9 @@ async function onSubmit() {
 
   if (!result.success) {
     errorMessage.value = result.message;
-    toast.error(result.message);
     return;
   }
 
-  toast.success(result.message);
   router.push("/");
 }
 </script>
