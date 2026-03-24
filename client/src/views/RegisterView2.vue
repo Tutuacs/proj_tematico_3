@@ -48,7 +48,7 @@ async function onSubmit() {
     return;
   }
 
-  isRegistering.value = true; 
+  isRegistering.value = true;
 
   const result = await authStore.register(registerPayload.value);
   isRegistering.value = false;
