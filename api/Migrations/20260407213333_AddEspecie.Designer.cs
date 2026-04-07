@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using api.Data;
 
@@ -11,9 +12,11 @@ using api.Data;
 namespace api.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260407213333_AddEspecie")]
+    partial class AddEspecie
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -122,43 +125,6 @@ namespace api.Migrations
                     b.ToTable("membro");
                 });
 
-            modelBuilder.Entity("api.Model.Entities.PlantioDb", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateOnly>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("date")
-                        .HasDefaultValueSql("(CURRENT_DATE)");
-
-                    b.Property<DateOnly>("DataPlantio")
-                        .HasColumnType("date");
-
-                    b.Property<int>("EspecieId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("HortaId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("Quantidade")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("EspecieId");
-
-                    b.HasIndex("HortaId");
-
-                    b.ToTable("plantio");
-                });
-
             modelBuilder.Entity("api.Model.Entities.ProfileDb", b =>
                 {
                     b.Property<string>("Id")
@@ -203,25 +169,6 @@ namespace api.Migrations
                     b.Navigation("Horta");
 
                     b.Navigation("Profile");
-                });
-
-            modelBuilder.Entity("api.Model.Entities.PlantioDb", b =>
-                {
-                    b.HasOne("api.Model.Entities.EspecieDb", "Especie")
-                        .WithMany()
-                        .HasForeignKey("EspecieId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("api.Model.Entities.HortaDb", "Horta")
-                        .WithMany()
-                        .HasForeignKey("HortaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Especie");
-
-                    b.Navigation("Horta");
                 });
 #pragma warning restore 612, 618
         }

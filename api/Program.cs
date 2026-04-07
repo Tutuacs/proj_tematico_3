@@ -1,12 +1,16 @@
 using api.Data;
 using api.Data.Repository.Auth;
+using api.Data.Repository.Especie;
 using api.Data.Repository.Horta;
 using api.Data.Repository.Membro;
+using api.Data.Repository.Plantio;
 using api.Helpers;
 using api.Middleware;
 using api.Service.Auth;
+using api.Service.Especie;
 using api.Service.Horta;
 using api.Service.Membro;
+using api.Service.Plantio;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
@@ -116,10 +120,14 @@ builder.Services.AddAuthorization();
 // Dependency Injection
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<IEspecieService, EspecieService>();
+builder.Services.AddScoped<IEspecieRepository, EspecieRepository>();
 builder.Services.AddScoped<IHortaService, HortaService>();
 builder.Services.AddScoped<IHortaRepository, HortaRepository>();
 builder.Services.AddScoped<IMembroService, MembroService>();
 builder.Services.AddScoped<IMembroRepository, MembroRepository>();
+builder.Services.AddScoped<IPlantioService, PlantioService>();
+builder.Services.AddScoped<IPlantioRepository, PlantioRepository>();
 builder.Services.AddScoped<JwtHelper>();
 
 var app = builder.Build();
