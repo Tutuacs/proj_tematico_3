@@ -57,13 +57,13 @@ public class HortaService(IHortaRepository hortaRepository, IMembroRepository me
         }
     }
 
-    public async Task<ServiceResponse<HortaDb>> GetByIdAsync(int id)
+    public async Task<ServiceResponse<HortaResumoDto>> GetByIdAsync(int id)
     {
         var horta = await _hortaRepository.GetByIdAsync(id);
         
         if (horta == null)
         {
-            return new ServiceResponse<HortaDb>
+            return new ServiceResponse<HortaResumoDto>
             {
                 Data = null,
                 Message = "Horta não encontrada",
@@ -71,7 +71,7 @@ public class HortaService(IHortaRepository hortaRepository, IMembroRepository me
             };
         }
 
-        return new ServiceResponse<HortaDb>
+        return new ServiceResponse<HortaResumoDto>
         {
             Data = horta,
             Message = "Horta encontrada",
@@ -79,11 +79,11 @@ public class HortaService(IHortaRepository hortaRepository, IMembroRepository me
         };
     }
 
-    public async Task<ServiceResponse<List<HortaDb>>> GetAllAsync()
+    public async Task<ServiceResponse<List<HortaResumoDto>>> GetAllAsync()
     {
         var hortas = await _hortaRepository.GetAllAsync();
         
-        return new ServiceResponse<List<HortaDb>>
+        return new ServiceResponse<List<HortaResumoDto>>
         {
             Data = hortas,
             Message = "Hortas listadas com sucesso",

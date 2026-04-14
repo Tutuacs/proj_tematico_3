@@ -6,8 +6,8 @@ namespace api.Data.Repository.Horta;
 public interface IHortaRepository
 {
     Task<HortaDb> CreateAsync(CreateHortaDto dto);
-    Task<HortaDb?> GetByIdAsync(int id);
-    Task<List<HortaDb>> GetAllAsync();
+    Task<HortaResumoDto?> GetByIdAsync(int id);
+    Task<List<HortaResumoDto>> GetAllAsync();
     Task<HortaDb?> UpdateAsync(int id, UpdateHortaDto dto);
     Task<bool> DeleteAsync(int id);
 }

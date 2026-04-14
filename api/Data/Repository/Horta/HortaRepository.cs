@@ -20,14 +20,43 @@ public class HortaRepository(ApplicationDbContext db) : IHortaRepository
         return horta;
     }
 
-    public async Task<HortaDb?> GetByIdAsync(int id)
+    public async Task<HortaResumoDto?> GetByIdAsync(int id)
     {
-        return await _db.Hortas.FindAsync(id);
+        return await _db.Hortas
+            .Where(h => h.Id == id)
+            .Select(h => new HortaResumoDto
+            {
+                Id = h.Id,
+                Nome = h.Nome,
+                Descricao = h.Descricao,
+                Local = h.Local,
+                Largura = h.Largura,
+                Profundidade = h.Profundidade,
+                Status = h.Status,
+                CreatedAt = h.CreatedAt,
+                CountMembros = _db.Membros.Count(m => m.HortaId == h.Id),
+                CountPlantios = _db.Plantios.Count(p => p.HortaId == h.Id)
+            })
+            .FirstOrDefaultAsync();
     }
 
-    public async Task<List<HortaDb>> GetAllAsync()
+    public async Task<List<HortaResumoDto>> GetAllAsync()
     {
-        return await _db.Hortas.ToListAsync();
+        return await _db.Hortas
+            .Select(h => new HortaResumoDto
+            {
+                Id = h.Id,
+                Nome = h.Nome,
+                Descricao = h.Descricao,
+                Local = h.Local,
+                Largura = h.Largura,
+                Profundidade = h.Profundidade,
+                Status = h.Status,
+                CreatedAt = h.CreatedAt,
+                CountMembros = _db.Membros.Count(m => m.HortaId == h.Id),
+                CountPlantios = _db.Plantios.Count(p => p.HortaId == h.Id)
+            })
+            .ToListAsync();
     }
 
     public async Task<HortaDb?> UpdateAsync(int id, UpdateHortaDto dto)
