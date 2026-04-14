@@ -25,36 +25,34 @@ onMounted(async () => {
 </script>
 
 <template>
-  <main class="mx-auto max-w-5xl space-y-6 p-6">
+  <main class="flex-1 overflow-auto">
+    <div class="mx-auto w-full max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+      <h1 class="text-3xl font-bold">Página Inicial</h1>
 
-    <h1 class="text-2xl font-semibold">Home</h1>
+      <p v-if="authStore.isLoggedIn" class="text-muted-foreground">
+        Bem-vindo, <strong>{{ authStore.user?.name || authStore.user?.email }}</strong>
+      </p>
 
-    <p v-if="authStore.isLoggedIn">
-      Você está logado como <strong>{{ authStore.user?.email }}</strong>.
-    </p>
+      <!-- CARDS -->
+      <div class="mt-8">
+        <h2 class="mb-6 text-xl font-semibold">Hortas Ativas</h2>
 
-    <RouterLink class="underline" to="/login">
-      Ir para login
-    </RouterLink>
+        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <HortaCard
+            v-for="(h, index) in hortas"
+            :key="index"
+            :nome="h.especie.nome"
+            :descricao="'Quantidade: ' + h.quantidade"
+            :progresso="h.quantidade"
+            :status="h.quantidade > 0 ? 'Ativo' : 'Vazio'"
+            :imagem="h.especie.imagemLink"
+          />
+        </div>
 
-    <!-- CARDS -->
-    <div class="mt-6">
-      <h2 class="text-lg font-semibold mb-4">Hortas Ativas</h2>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        
-        <HortaCard
-          v-for="(h, index) in hortas"
-          :key="index"
-          :nome="h.especie.nome"
-          :descricao="'Quantidade: ' + h.quantidade"
-          :progresso="h.quantidade"
-          :status="h.quantidade > 0 ? 'Ativo' : 'Vazio'"
-          :imagem="h.especie.imagemLink"
-        />
-
+        <p v-if="hortas.length === 0" class="py-12 text-center text-muted-foreground">
+          Nenhuma horta cadastrada ainda.
+        </p>
       </div>
     </div>
-
   </main>
 </template>
