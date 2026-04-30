@@ -46,23 +46,35 @@ async function onSubmit() {
   <Container>
     <main class="grid min-h-screen md:grid-cols-2">
 
-      <!-- LADO ESQUERDO -->
-      <div class="hidden md:flex flex-col justify-between bg-green-900 text-white p-16 min-h-screen">
-        <div>
-          <h1 class="text-4xl font-bold mb-2 tracking-tight">
-            HortaFácil
-          </h1>
-          <p class="text-sm text-green-100">
-            Cultivando a comunidade com precisão.
-          </p>
-        </div>
+<!-- LADO ESQUERDO -->
+<div class="hidden md:flex items-start justify-start relative min-h-screen">
+  <img
+    src="https://img.freepik.com/vetores-gratis/fundo-realista-de-folhas-tropicais-escuras_52683-30655.jpg?semt=ais_hybrid&w=740&q=80"
+    class="absolute inset-0 w-full h-full object-cover"
+  />
 
-        <div class="space-y-3 text-sm text-green-100">
-          <p>🌱 Gestão inteligente das hortas</p>
-          <p>👥 Crescimento colaborativo</p>
-          <p>📊 Ferramentas de controle e organização</p>
-        </div>
-      </div>
+  <div class="absolute inset-0 bg-black/50"></div>
+
+  <div class="relative z-10 flex flex-col justify-between h-full pl-8 pr-6 py-16 text-white">
+
+    <div>
+      <h1 class="text-4xl font-bold mb-2 tracking-tight">
+        HortaFácil
+      </h1>
+      <p class="text-sm text-green-100">
+        Cultivando a comunidade com precisão.
+      </p>
+    </div>
+
+    <div class="space-y-3 text-sm text-green-100">
+      <p>Gestão inteligente das hortas</p>
+      <p>Crescimento colaborativo</p>
+      <p>Ferramentas de controle e organização</p>
+    </div>
+
+  </div>
+
+</div>
 
       <!-- LADO DIREITO -->
       <div class="flex items-center justify-center p-6 bg-gray-50">
@@ -104,7 +116,7 @@ async function onSubmit() {
 
               <Button
                 type="submit"
-                class="w-full bg-green-600 hover:bg-green-700 text-white transition-all"
+                class="w-full bg-emerald-700 hover:bg-emerald-800 text-white transition-all"
                 :disabled="isSubmitting"
               >
                 {{ isSubmitting ? "Entrando..." : "Entrar" }}
@@ -115,11 +127,11 @@ async function onSubmit() {
           <CardFooter class="text-sm text-gray-500 justify-center">
             Não tem uma conta?
             <RouterLink
-              to="/register"
-              class="text-green-700 hover:underline pl-1"
+            to="/register"
+            class="text-emerald-700 font-medium hover:text-emerald-900 hover:underline pl-1 transition-colors"
             >
-              Registre-se
-            </RouterLink>
+            Registre-se
+          </RouterLink>
           </CardFooter>
 
         </Card>
