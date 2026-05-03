@@ -62,12 +62,13 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   const isLoggedIn = Boolean(localStorage.getItem('token'))
+  const publicRoutes = ['/login', '/register']
 
-  if (!isLoggedIn && to.path !== '/login') {
+  if (!isLoggedIn && !publicRoutes.includes(to.path)) {
     return '/login'
   }
 
-  if (isLoggedIn && to.path === '/login') {
+  if (isLoggedIn && publicRoutes.includes(to.path)) {
     return '/'
   }
 

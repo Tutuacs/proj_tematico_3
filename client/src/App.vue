@@ -10,10 +10,11 @@ import {
 import AppSidebar from '@/components/layout/AppSidebar.vue'
 
 const route = useRoute()
+const publicRoutes = ['/login', '/register']
 </script>
 
 <template>
-  <RouterView v-if="route.path === '/login'" />
+  <RouterView v-if="publicRoutes.includes(route.path)" />
 
   <SidebarProvider v-else>
     <AppSidebar />
