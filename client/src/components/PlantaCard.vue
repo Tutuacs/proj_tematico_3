@@ -70,8 +70,11 @@ function toggleExpand() {
             <h3 class="truncate text-lg font-bold text-gray-800">{{ planta.nome }}</h3>
             <p class="mt-1 line-clamp-2 text-xs text-gray-600">{{ planta.descricao }}</p>
 
-            <div class="mt-4 grid grid-cols-[150px_1fr] items-center gap-x-3 text-sm">
-              <span class="font-semibold text-gray-700">Dias para colher:</span>
+            <div class="mt-4 grid grid-cols-[130px_1fr] items-center gap-x-3 gap-y-2 text-sm">
+              <span class="font-semibold text-gray-700">Rega:</span>
+              <span class="font-bold text-blue-700">A cada {{ planta.diasParaRegar }} dias</span>
+
+              <span class="font-semibold text-gray-700">Colheita:</span>
               <span class="font-bold text-amber-700">{{ planta.diasParaColher }} dias</span>
             </div>
           </div>

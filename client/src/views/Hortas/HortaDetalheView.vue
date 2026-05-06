@@ -3,6 +3,8 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import HortaCard from '@/components/HortaCard.vue'
 import { getHortaById, getPlantiosByHorta } from '@/services/Horta/horta.service'
+import { getMembrosByHorta } from '@/services/Membro/membro.service'
+import { RouterLink } from 'vue-router'
 
 type HortaResumo = {
   id: number
@@ -14,7 +16,9 @@ type HortaResumo = {
 }
 
 type PlantioItem = {
+  id: number
   quantidade: number
+  status?: string
   especie?: {
     nome?: string
     imageLink?: string
@@ -23,13 +27,32 @@ type PlantioItem = {
   }
 }
 
+type MembroItem = {
+  id: number
+  role?: string
+  perfilId?: string
+  profile?: {
+    name?: string
+    email?: string
+  }
+}
+
 const route = useRoute()
 
 const hortaId = computed(() => Number(route.params.id))
 const horta = ref<HortaResumo | null>(null)
 const plantios = ref<PlantioItem[]>([])
+const membros = ref<MembroItem[]>([])
 const isLoading = ref(true)
 const errorMessage = ref<string | null>(null)
+
+const membrosSorted = computed(() => {
+  return [...membros.value].sort((a, b) => {
+    if (a.role === 'Admin' && b.role !== 'Admin') return -1
+    if (a.role !== 'Admin' && b.role === 'Admin') return 1
+    return 0
+  })
+})
 
 async function loadHortaData() {
   if (!Number.isFinite(hortaId.value) || hortaId.value <= 0) {
@@ -43,13 +66,15 @@ async function loadHortaData() {
   errorMessage.value = null
 
   try {
-    const [hortaRes, plantiosRes] = await Promise.all([
+    const [hortaRes, plantiosRes, membrosRes] = await Promise.all([
       getHortaById(hortaId.value),
       getPlantiosByHorta(hortaId.value),
+      getMembrosByHorta(hortaId.value),
     ])
 
     horta.value = hortaRes?.data ?? null
     plantios.value = plantiosRes?.data ?? []
+    membros.value = membrosRes?.data?.data ?? []
   } catch {
     errorMessage.value = 'Não foi possível carregar os dados da horta.'
     horta.value = null
@@ -96,16 +121,46 @@ watch(() => route.params.id, loadHortaData)
         Nenhum plantio encontrado para esta horta.
       </div>
 
-      <div v-else class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        <HortaCard
-          v-for="(item, index) in plantios"
-          :key="index"
-          :nome="item.especie?.nome || 'Espécie sem nome'"
-          :descricao="item.especie?.descricao || `Quantidade: ${item.quantidade}`"
-          :progresso="Math.min(item.quantidade, 100)"
-          :status="item.quantidade > 0 ? 'Ativo' : 'Vazio'"
-          :imagem="item.especie?.imageLink || item.especie?.imagemLink"
-        />
+      <div v-else>
+        <section class="mb-8">
+          <h2 class="text-lg font-semibold mb-4">Membros</h2>
+          <div v-if="membros.length === 0" class="text-muted-foreground py-4">Nenhum membro encontrado.</div>
+          <div v-else class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <RouterLink v-for="(mem, idx) in membrosSorted" :key="mem.id ?? idx" :to="`/membro/${mem.id ?? idx}`" class="block">
+              <div class="bg-white border rounded-lg p-4 hover:shadow-md hover:border-blue-300 transition-all h-full">
+                <div class="flex items-start justify-between">
+                  <div class="flex-1">
+                    <div class="font-medium text-gray-900 truncate">{{ mem.profile?.name || mem.perfilId }}</div>
+                    <div class="text-sm text-gray-500 truncate">{{ mem.profile?.email }}</div>
+                  </div>
+                  <span :class="[
+                    'text-xs px-2 py-1 rounded ml-2 whitespace-nowrap',
+                    mem.role === 'Admin' 
+                      ? 'bg-purple-100 text-purple-700'
+                      : 'bg-blue-100 text-blue-700'
+                  ]">
+                    {{ mem.role }}
+                  </span>
+                </div>
+              </div>
+            </RouterLink>
+          </div>
+        </section>
+
+        <section>
+          <h2 class="text-lg font-semibold mb-4">Plantios</h2>
+          <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <RouterLink v-for="(item, index) in plantios" :key="item.id || index" :to="`/plantio/${item.id}`" class="block">
+              <HortaCard
+                :nome="item.especie?.nome || 'Espécie sem nome'"
+                :descricao="item.especie?.descricao || `Quantidade: ${item.quantidade}`"
+                :progresso="Math.min(item.quantidade || 0, 100)"
+                :status="item.status || (item.quantidade && item.quantidade > 0 ? 'Ativo' : 'Vazio')"
+                :imagem="item.especie?.imageLink || item.especie?.imagemLink"
+              />
+            </RouterLink>
+          </div>
+        </section>
       </div>
     </div>
   </main>

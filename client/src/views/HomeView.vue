@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { RouterLink } from "vue-router";
-import { ArrowRight, Leaf, Plus, Sprout, Users } from "lucide-vue-next";
+import { ArrowRight, Leaf, Plus, Sprout, Users, Flower2, Users2 } from "lucide-vue-next";
 
 import HortaCard from "@/components/HortaCard.vue";
 import { useAuthStore } from "@/stores/auth";
-import { getPlantiosByHorta } from "@/services/Horta/horta.service";
+import { getHortas, getPlantiosByHorta } from "@/services/Horta/horta.service";
+import { getMembrosByHorta } from "@/services/Membro/membro.service";
 
 const authStore = useAuthStore();
 
@@ -13,14 +14,16 @@ const hortas = ref<any[]>([]);
 
 const userName = computed(() => authStore.user?.name || authStore.user?.email || "visitante");
 
-const totalPlantios = computed(() => hortas.value.length);
-
-const totalQuantidade = computed(() =>
-  hortas.value.reduce((total, horta) => total + Number(horta.quantidade || 0), 0),
+const totalPlantios = computed(() => 
+  hortas.value.reduce((sum, h) => sum + (h.plantios?.length || 0), 0)
 );
 
-const especiesAtivas = computed(
-  () => new Set(hortas.value.map((horta) => horta.especie?.nome).filter(Boolean)).size,
+const totalQuantidade = computed(() =>
+  hortas.value.reduce((sum, horta) => sum + (horta.plantios?.reduce((s: any, p: any) => s + (p.quantidade || 0), 0) || 0), 0)
+);
+
+const totalMembros = computed(() =>
+  hortas.value.reduce((sum, h) => sum + (h.membros?.length || 0), 0)
 );
 
 const resumoCards = computed(() => [
@@ -37,18 +40,38 @@ const resumoCards = computed(() => [
     icon: Leaf,
   },
   {
-    titulo: "Especies",
-    valor: especiesAtivas.value,
-    descricao: "tipos cadastrados",
-    icon: Users,
+    titulo: "Membros",
+    valor: totalMembros.value,
+    descricao: "membros das hortas",
+    icon: Users2,
   },
 ]);
 
 onMounted(async () => {
   try {
-    const res = await getPlantiosByHorta(1);
-
-    hortas.value = res.data;
+    const res = await getHortas();
+    const hortasData = res.data || [];
+    
+    // Enriquecer cada horta com dados de plantios e membros
+    const enrichedHortas = await Promise.all(
+      hortasData.map(async (horta: any) => {
+        try {
+          const [plantiosRes, membrosRes] = await Promise.all([
+            getPlantiosByHorta(horta.id),
+            getMembrosByHorta(horta.id),
+          ]);
+          return {
+            ...horta,
+            plantios: plantiosRes.data || [],
+            membros: membrosRes.data?.data || [],
+          };
+        } catch {
+          return { ...horta, plantios: [], membros: [] };
+        }
+      })
+    );
+    
+    hortas.value = enrichedHortas;
   } catch (error) {
     console.error(error);
   }
@@ -141,15 +164,27 @@ onMounted(async () => {
           v-if="hortas.length > 0"
           class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
         >
-          <HortaCard
-            v-for="(h, index) in hortas"
-            :key="index"
-            :nome="h.especie.nome"
-            :descricao="'Quantidade: ' + h.quantidade"
-            :progresso="h.quantidade"
-            :status="h.quantidade > 0 ? 'Ativo' : 'Vazio'"
-            :imagem="h.especie.imagemLink"
-          />
+          <RouterLink
+            v-for="horta in hortas"
+            :key="horta.id"
+            :to="`/horta/${horta.id}`"
+            class="rounded-lg border bg-card p-4 shadow-sm hover:shadow-md transition-shadow"
+          >
+            <h3 class="font-semibold text-foreground">{{ horta.nome }}</h3>
+            <div class="mt-4 space-y-2">
+              <div class="flex items-center gap-2 text-sm text-muted-foreground">
+                <Flower2 class="h-4 w-4 text-green-600" />
+                <span>{{ horta.plantios?.length || 0 }} plantio{{ (horta.plantios?.length || 0) !== 1 ? 's' : '' }}</span>
+              </div>
+              <div class="flex items-center gap-2 text-sm text-muted-foreground">
+                <Users2 class="h-4 w-4 text-blue-600" />
+                <span>{{ horta.membros?.length || 0 }} membro{{ (horta.membros?.length || 0) !== 1 ? 's' : '' }}</span>
+              </div>
+            </div>
+            <p class="mt-3 text-xs text-muted-foreground">
+              Clique para gerenciar
+            </p>
+          </RouterLink>
         </div>
 
         <div

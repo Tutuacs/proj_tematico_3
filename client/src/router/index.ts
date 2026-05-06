@@ -8,6 +8,8 @@ import PlantasView from '@/views/Plantas/PlantasView.vue'
 import NovaEspecieView from '@/views/Plantas/NovaEspecieView.vue'
 import LoginView from '@/views/LoginView.vue'
 import RegisterView from '@/views/RegisterView.vue'
+import MembroEditView from '@/views/Membros/MembroEditView.vue'
+import PlantioEditView from '@/views/Plantios/PlantioEditView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -41,6 +43,16 @@ const router = createRouter({
       path: '/plantas',
       name: 'plantas',
       component: PlantasView,
+    },
+    {
+      path: '/membro/:id',
+      name: 'membro-edit',
+      component: MembroEditView,
+    },
+    {
+      path: '/plantio/:id',
+      name: 'plantio-edit',
+      component: PlantioEditView,
     },
     {
       path: '/plantas/nova-especie',
