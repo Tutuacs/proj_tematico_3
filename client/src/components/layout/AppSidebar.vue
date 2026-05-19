@@ -31,12 +31,17 @@ const menuItems = [
 
 const userDisplayName = computed(() => authStore.user?.name || authStore.user?.email || 'Usuário')
 const isPlantasRoute = computed(() => route.path === '/plantas')
+const isTarefasRoute = computed(() => route.path === '/tarefas')
 const hortaId = computed(() => route.params.id?.toString() ?? '')
 const isHortaDetailRoute = computed(() => route.path.startsWith('/horta/') && !!hortaId.value)
 
 function isMenuItemActive(path: string) {
   if (path === '/horta') {
     return route.path === '/horta' || route.path.startsWith('/horta/')
+  }
+
+  if (path === '/tarefas') {
+    return route.path === '/tarefas' || route.path.startsWith('/tarefas/')
   }
 
   return route.path === path
@@ -95,6 +100,13 @@ function handleLogout() {
         <RouterLink to="/plantas/nova-especie" class="flex items-center gap-2">
           <Plus class="size-4" />
           Nova espécie
+        </RouterLink>
+      </Button>
+
+      <Button v-if="isTarefasRoute" as-child variant="default" size="sm" class="w-full">
+        <RouterLink to="/tarefas/nova" class="flex items-center gap-2">
+          <Plus class="size-4" />
+          Nova tarefa
         </RouterLink>
       </Button>
 

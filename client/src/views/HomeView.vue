@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { RouterLink } from "vue-router";
-import { ArrowRight, Leaf, Plus, Sprout, Users, Flower2, Users2 } from "lucide-vue-next";
+import { ArrowRight, CalendarDays, CheckCircle2, ClipboardList, Leaf, Plus, Sprout, Users2, Flower2 } from "lucide-vue-next";
 
 import HortaCard from "@/components/HortaCard.vue";
 import { useAuthStore } from "@/stores/auth";
@@ -11,6 +11,27 @@ import { getMembrosByHorta } from "@/services/Membro/membro.service";
 const authStore = useAuthStore();
 
 const hortas = ref<any[]>([]);
+
+const tarefas = ref([
+  {
+    id: 1,
+    titulo: "Regar canteiro de alfaces",
+    status: "Pendente",
+    data: "20/05/2026",
+  },
+  {
+    id: 2,
+    titulo: "Revisar crescimento dos tomates",
+    status: "Em andamento",
+    data: "21/05/2026",
+  },
+  {
+    id: 3,
+    titulo: "Podar ervas aromaticas",
+    status: "Concluida",
+    data: "18/05/2026",
+  },
+]);
 
 const userName = computed(() => authStore.user?.name || authStore.user?.email || "visitante");
 
@@ -25,6 +46,8 @@ const totalQuantidade = computed(() =>
 const totalMembros = computed(() =>
   hortas.value.reduce((sum, h) => sum + (h.membros?.length || 0), 0)
 );
+
+const totalTarefas = computed(() => tarefas.value.length);
 
 const resumoCards = computed(() => [
   {
@@ -44,6 +67,12 @@ const resumoCards = computed(() => [
     valor: totalMembros.value,
     descricao: "membros das hortas",
     icon: Users2,
+  },
+  {
+    titulo: "Tarefas",
+    valor: totalTarefas.value,
+    descricao: "atividades planejadas",
+    icon: ClipboardList,
   },
 ]);
 
@@ -81,21 +110,21 @@ onMounted(async () => {
 <template>
   <main class="flex-1 overflow-auto">
     <div class="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-7xl flex-col justify-center gap-8 px-4 py-8 sm:px-6 lg:px-8">
-      <section class="grid items-stretch gap-6 lg:grid-cols-[1.35fr_0.65fr]">
-        <div class="rounded-lg border bg-card p-6 shadow-sm sm:p-8">
-          <div class="flex h-full flex-col justify-between gap-8">
-            <div class="space-y-4">
+      <section class="grid items-start gap-6 lg:grid-cols-[1.35fr_0.65fr]">
+        <div class="rounded-lg border bg-card p-5 shadow-sm sm:p-6">
+          <div class="flex h-full flex-col gap-4">
+            <div class="space-y-3">
               <span class="inline-flex w-fit items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
                 <Leaf class="h-4 w-4" />
                 Painel da horta
               </span>
 
               <div class="max-w-3xl space-y-3">
-                <h1 class="text-3xl font-bold tracking-normal text-foreground sm:text-4xl">
+                <h1 class="text-2xl font-bold tracking-normal text-foreground sm:text-3xl">
                   Pagina Inicial
                 </h1>
 
-                <p v-if="authStore.isLoggedIn" class="text-base text-muted-foreground sm:text-lg">
+                <p v-if="authStore.isLoggedIn" class="text-sm text-muted-foreground sm:text-base">
                   Bem-vindo, <strong class="text-foreground">{{ userName }}</strong>. Acompanhe os plantios, especies e atividades da sua horta em um so lugar.
                 </p>
               </div>
@@ -121,7 +150,7 @@ onMounted(async () => {
           </div>
         </div>
 
-        <div class="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
           <article
             v-for="card in resumoCards"
             :key="card.titulo"
@@ -139,6 +168,59 @@ onMounted(async () => {
               </div>
             </div>
           </article>
+        </div>
+      </section>
+
+      <section class="rounded-lg border bg-card p-5 shadow-sm sm:p-6">
+        <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 class="text-xl font-semibold">Tarefas Recentes</h2>
+            <p class="mt-1 text-sm text-muted-foreground">
+              Atividades planejadas para manter a rotina da horta organizada.
+            </p>
+          </div>
+
+          <RouterLink
+            to="/tarefas"
+            class="inline-flex items-center justify-center gap-2 rounded-md border bg-background px-3 py-2 text-sm font-medium transition hover:bg-accent hover:text-accent-foreground"
+          >
+            Ver tarefas
+            <ArrowRight class="h-4 w-4" />
+          </RouterLink>
+        </div>
+
+        <div class="grid gap-4 md:grid-cols-3">
+          <RouterLink
+            v-for="tarefa in tarefas"
+            :key="tarefa.id"
+            to="/tarefas"
+            class="rounded-lg border bg-card p-4 shadow-sm transition hover:border-primary/40 hover:shadow-md"
+          >
+            <div class="mb-4 flex items-start justify-between gap-3">
+              <div class="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
+                <ClipboardList class="h-5 w-5" />
+              </div>
+
+              <span
+                class="rounded-full px-2.5 py-1 text-xs font-medium"
+                :class="tarefa.status === 'Concluida' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'"
+              >
+                {{ tarefa.status }}
+              </span>
+            </div>
+
+            <h3 class="line-clamp-2 font-semibold text-foreground">{{ tarefa.titulo }}</h3>
+
+            <div class="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+              <CalendarDays class="h-4 w-4 text-green-600" />
+              <span>{{ tarefa.data }}</span>
+            </div>
+
+            <p class="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+              <CheckCircle2 class="h-3.5 w-3.5" />
+              Clique para acompanhar
+            </p>
+          </RouterLink>
         </div>
       </section>
 

@@ -6,6 +6,9 @@ import HortaPlantiosView from '@/views/Hortas/HortaPlantiosView.vue'
 import HortaMembrosView from '@/views/Hortas/HortaMembrosView.vue'
 import PlantasView from '@/views/Plantas/PlantasView.vue'
 import NovaEspecieView from '@/views/Plantas/NovaEspecieView.vue'
+import TarefasView from '@/views/TarefasView.vue'
+import NovaTarefaView from '@/views/Tarefas/NovaTarefaView.vue'
+import ConfiguracoesView from '@/views/ConfiguracoesView.vue'
 import LoginView from '@/views/LoginView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import MembroEditView from '@/views/Membros/MembroEditView.vue'
@@ -43,6 +46,21 @@ const router = createRouter({
       path: '/plantas',
       name: 'plantas',
       component: PlantasView,
+    },
+    {
+      path: '/tarefas',
+      name: 'tarefas',
+      component: TarefasView,
+    },
+    {
+      path: '/tarefas/nova',
+      name: 'nova-tarefa',
+      component: NovaTarefaView,
+    },
+    {
+      path: '/configuracoes',
+      name: 'configuracoes',
+      component: ConfiguracoesView,
     },
     {
       path: '/membro/:id',
