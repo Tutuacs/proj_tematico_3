@@ -1,17 +1,21 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
-import { CalendarDays, CheckCircle2 } from 'lucide-vue-next'
+import { CalendarDays, CheckCircle2, Edit, Eye, MoreHorizontal, Trash2, User2, Sprout } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 
 type TaskStatus = 'Pendente' | 'Em andamento' | 'Concluida'
 type TaskPriority = 'Baixa' | 'Media' | 'Alta'
 
 defineProps<{
+  id: number
   nome: string
   descricao: string
   status: TaskStatus
   prioridade: TaskPriority
   data: string
+  horta: string
+  responsavel: string
+  tipo: string
   icon: Component
 }>()
 
@@ -38,7 +42,7 @@ function priorityClasses(prioridade: TaskPriority) {
 
 <template>
   <article
-    class="group flex min-h-56 flex-col justify-between rounded-xl border bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+    class="group flex min-h-72 flex-col justify-between rounded-xl border bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
   >
     <div>
       <div class="mb-4 flex items-start justify-between gap-3">
@@ -54,8 +58,20 @@ function priorityClasses(prioridade: TaskPriority) {
         </span>
       </div>
 
-      <h2 class="text-lg font-semibold text-gray-900">{{ nome }}</h2>
+      <p class="mb-2 text-xs font-medium uppercase text-gray-400">{{ tipo }}</p>
+      <h2 class="line-clamp-2 text-lg font-semibold text-gray-900">{{ nome }}</h2>
       <p class="mt-2 line-clamp-2 text-sm text-gray-500">{{ descricao }}</p>
+
+      <div class="mt-4 space-y-2 text-sm text-gray-600">
+        <p class="flex items-center gap-2">
+          <Sprout class="h-4 w-4 shrink-0 text-green-600" />
+          <span class="truncate">{{ horta }}</span>
+        </p>
+        <p class="flex items-center gap-2">
+          <User2 class="h-4 w-4 shrink-0 text-blue-600" />
+          <span class="truncate">{{ responsavel }}</span>
+        </p>
+      </div>
 
       <div class="mt-4 flex flex-wrap gap-2 text-xs">
         <span
@@ -71,15 +87,32 @@ function priorityClasses(prioridade: TaskPriority) {
       </div>
     </div>
 
-    <div class="mt-5 border-t pt-4">
+    <div class="mt-5 grid gap-2 border-t pt-4 sm:grid-cols-[1fr_auto]">
       <Button
         variant="outline"
         size="sm"
         class="w-full border-green-200 text-green-700 transition-colors hover:bg-green-50 hover:text-green-800"
       >
         <CheckCircle2 class="h-4 w-4" />
-        Marcar como concluida
+        Concluir
       </Button>
+
+      <div class="grid grid-cols-4 gap-1 sm:flex">
+        <Button as-child variant="outline" size="sm" class="px-2" title="Ver detalhes">
+          <RouterLink :to="`/tarefas/${id}`">
+            <Eye class="h-4 w-4" />
+          </RouterLink>
+        </Button>
+        <Button variant="outline" size="sm" class="px-2" title="Editar">
+          <Edit class="h-4 w-4" />
+        </Button>
+        <Button variant="outline" size="sm" class="px-2 text-red-600 hover:bg-red-50 hover:text-red-700" title="Excluir">
+          <Trash2 class="h-4 w-4" />
+        </Button>
+        <Button variant="outline" size="sm" class="px-2" title="Mais acoes">
+          <MoreHorizontal class="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   </article>
 </template>

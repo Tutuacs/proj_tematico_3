@@ -8,6 +8,7 @@ import PlantasView from '@/views/Plantas/PlantasView.vue'
 import NovaEspecieView from '@/views/Plantas/NovaEspecieView.vue'
 import TarefasView from '@/views/TarefasView.vue'
 import NovaTarefaView from '@/views/Tarefas/NovaTarefaView.vue'
+import TarefaDetalheView from '@/views/Tarefas/TarefaDetalheView.vue'
 import ConfiguracoesView from '@/views/ConfiguracoesView.vue'
 import LoginView from '@/views/LoginView.vue'
 import RegisterView from '@/views/RegisterView.vue'
@@ -56,6 +57,11 @@ const router = createRouter({
       path: '/tarefas/nova',
       name: 'nova-tarefa',
       component: NovaTarefaView,
+    },
+    {
+      path: '/tarefas/:id',
+      name: 'tarefa-detalhe',
+      component: TarefaDetalheView,
     },
     {
       path: '/configuracoes',

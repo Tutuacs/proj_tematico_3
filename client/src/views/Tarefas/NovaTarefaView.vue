@@ -2,7 +2,7 @@
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
-import { CalendarDays, CheckCircle2, ClipboardList, ListTodo, Save, X } from 'lucide-vue-next'
+import { CalendarDays, CheckCircle2, ClipboardList, Leaf, ListTodo, Save, Sprout, User2, X } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -11,28 +11,31 @@ const router = useRouter()
 const isSubmitting = ref(false)
 
 const hortas = ['Horta Comunitaria Central', 'Horta da Escola', 'Canteiro de Ervas']
-const responsaveis = ['teste 1']
+const plantios = ['Alface crespa', 'Tomate cereja', 'Manjericao', 'Sem plantio relacionado']
+const responsaveis = ['Ana Paula', 'Carlos Silva', 'Marina Costa', 'Equipe da tarde']
+const tipos = ['Regar', 'Plantar', 'Colher', 'Limpar', 'Adubar', 'Inspecionar', 'Podar']
 const prioridades = ['Baixa', 'Media', 'Alta']
-const statusOptions = ['Pendente', 'Em andamento', 'Concluida']
 
 const form = reactive({
   titulo: '',
   descricao: '',
+  tipo: '',
   horta: '',
+  plantio: 'Sem plantio relacionado',
   responsavel: '',
   prioridade: 'Media',
-  status: 'Pendente',
-  dataPrevista: '',
+  dataLimite: '',
 })
 
 function resetForm() {
   form.titulo = ''
   form.descricao = ''
+  form.tipo = ''
   form.horta = ''
+  form.plantio = 'Sem plantio relacionado'
   form.responsavel = ''
   form.prioridade = 'Media'
-  form.status = 'Pendente'
-  form.dataPrevista = ''
+  form.dataLimite = ''
 }
 
 function onSubmit() {
@@ -71,7 +74,7 @@ function onSubmit() {
 
           <div>
             <h2 class="text-lg font-semibold text-gray-900">Informacoes da tarefa</h2>
-            <p class="text-sm text-gray-600">Dados usados apenas localmente nesta etapa.</p>
+            <p class="text-sm text-gray-600">Defina a atividade, prazo e pessoa responsavel.</p>
           </div>
         </div>
 
@@ -94,31 +97,67 @@ function onSubmit() {
           </div>
 
           <div class="space-y-2">
+            <Label for="tipo">Tipo da tarefa</Label>
+            <div class="relative">
+              <ListTodo class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <select
+                id="tipo"
+                v-model="form.tipo"
+                required
+                class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 pl-9 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              >
+                <option value="" disabled>Selecione o tipo</option>
+                <option v-for="tipo in tipos" :key="tipo" :value="tipo">{{ tipo }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="space-y-2">
             <Label for="horta">Horta relacionada</Label>
-            <select
-              id="horta"
-              v-model="form.horta"
-              required
-              class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-            >
-              <option value="" disabled>Selecione uma horta</option>
-              <option v-for="horta in hortas" :key="horta" :value="horta">{{ horta }}</option>
-            </select>
+            <div class="relative">
+              <Sprout class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <select
+                id="horta"
+                v-model="form.horta"
+                required
+                class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 pl-9 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              >
+                <option value="" disabled>Selecione uma horta</option>
+                <option v-for="horta in hortas" :key="horta" :value="horta">{{ horta }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <Label for="plantio">Plantio relacionado</Label>
+            <div class="relative">
+              <Leaf class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <select
+                id="plantio"
+                v-model="form.plantio"
+                class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 pl-9 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              >
+                <option v-for="plantio in plantios" :key="plantio" :value="plantio">{{ plantio }}</option>
+              </select>
+            </div>
           </div>
 
           <div class="space-y-2">
             <Label for="responsavel">Responsavel</Label>
-            <select
-              id="responsavel"
-              v-model="form.responsavel"
-              required
-              class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-            >
-              <option value="" disabled>Selecione um responsavel</option>
-              <option v-for="responsavel in responsaveis" :key="responsavel" :value="responsavel">
-                {{ responsavel }}
-              </option>
-            </select>
+            <div class="relative">
+              <User2 class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <select
+                id="responsavel"
+                v-model="form.responsavel"
+                required
+                class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 pl-9 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              >
+                <option value="" disabled>Selecione um responsavel</option>
+                <option v-for="responsavel in responsaveis" :key="responsavel" :value="responsavel">
+                  {{ responsavel }}
+                </option>
+              </select>
+            </div>
           </div>
 
           <div class="space-y-2">
@@ -135,25 +174,11 @@ function onSubmit() {
             </select>
           </div>
 
-          <div class="space-y-2">
-            <Label for="status">Status</Label>
-            <select
-              id="status"
-              v-model="form.status"
-              required
-              class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-            >
-              <option v-for="status in statusOptions" :key="status" :value="status">
-                {{ status }}
-              </option>
-            </select>
-          </div>
-
           <div class="space-y-2 md:col-span-2">
-            <Label for="dataPrevista">Data prevista</Label>
+            <Label for="dataLimite">Data limite</Label>
             <div class="relative">
               <CalendarDays class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <Input id="dataPrevista" v-model="form.dataPrevista" required type="date" class="pl-9" />
+              <Input id="dataLimite" v-model="form.dataLimite" required type="date" class="pl-9" />
             </div>
           </div>
         </div>
