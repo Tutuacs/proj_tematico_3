@@ -13,83 +13,13 @@ import {
   User2,
 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
-
-type TaskStatus = 'Pendente' | 'Em andamento' | 'Concluida'
-type TaskPriority = 'Baixa' | 'Media' | 'Alta'
-
-type Task = {
-  id: number
-  nome: string
-  descricao: string
-  status: TaskStatus
-  prioridade: TaskPriority
-  data: string
-  horta: string
-  responsavel: string
-  tipo: string
-  plantio: string
-  observacoes: string[]
-}
+import { mockTasks } from '@/mocks/tarefas'
+import type { TaskPriority, TaskStatus } from '@/types/tarefa'
 
 const route = useRoute()
 
-const tasks: Task[] = [
-  {
-    id: 1,
-    nome: 'Regar canteiro de alfaces',
-    descricao: 'Verificar umidade do solo e realizar a rega no periodo da manha.',
-    status: 'Pendente',
-    prioridade: 'Alta',
-    data: '20/05/2026',
-    horta: 'Horta Comunitaria Central',
-    responsavel: 'Ana Paula',
-    tipo: 'Rega',
-    plantio: 'Alface crespa',
-    observacoes: ['Conferir se o solo ainda esta compacto.', 'Evitar molhar diretamente as folhas.'],
-  },
-  {
-    id: 2,
-    nome: 'Revisar crescimento dos tomates',
-    descricao: 'Acompanhar folhas, galhos e sinais de pragas no plantio principal.',
-    status: 'Em andamento',
-    prioridade: 'Media',
-    data: '21/05/2026',
-    horta: 'Horta Comunitaria Central',
-    responsavel: 'Carlos Silva',
-    tipo: 'Inspecao',
-    plantio: 'Tomate cereja',
-    observacoes: ['Registrar sinais de pragas.', 'Verificar necessidade de suporte nos galhos.'],
-  },
-  {
-    id: 3,
-    nome: 'Podar ervas aromaticas',
-    descricao: 'Remover folhas secas e organizar mudas de manjericao e hortela.',
-    status: 'Concluida',
-    prioridade: 'Baixa',
-    data: '18/05/2026',
-    horta: 'Canteiro de Ervas',
-    responsavel: 'Marina Costa',
-    tipo: 'Poda',
-    plantio: 'Manjericao',
-    observacoes: ['Atividade concluida sem pendencias.'],
-  },
-  {
-    id: 4,
-    nome: 'Preparar novo canteiro',
-    descricao: 'Separar ferramentas, adubo organico e area para o proximo plantio.',
-    status: 'Pendente',
-    prioridade: 'Alta',
-    data: '23/05/2026',
-    horta: 'Horta da Escola',
-    responsavel: 'Equipe da tarde',
-    tipo: 'Plantio',
-    plantio: 'Sem plantio relacionado',
-    observacoes: ['Separar enxada, luvas e adubo.', 'Medir o espaco antes de iniciar.'],
-  },
-]
-
 const tarefaId = computed(() => Number(route.params.id))
-const tarefa = computed(() => tasks.find((task) => task.id === tarefaId.value) ?? null)
+const tarefa = computed(() => mockTasks.find((task) => task.id === tarefaId.value) ?? null)
 
 function statusClasses(status: TaskStatus) {
   return {

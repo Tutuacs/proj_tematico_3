@@ -3,34 +3,15 @@ import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import {
   CalendarCheck2,
-  ClipboardList,
-  Droplets,
   ListTodo,
   Plus,
   Search,
-  Scissors,
-  Sprout,
   TriangleAlert,
 } from 'lucide-vue-next'
 import TaskCard from '@/components/TaskCard.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-
-type TaskStatus = 'Pendente' | 'Em andamento' | 'Concluida'
-type TaskPriority = 'Baixa' | 'Media' | 'Alta'
-
-type Task = {
-  id: number
-  nome: string
-  descricao: string
-  status: TaskStatus
-  prioridade: TaskPriority
-  data: string
-  horta: string
-  responsavel: string
-  tipo: string
-  icon: typeof Droplets
-}
+import { mockTasks } from '@/mocks/tarefas'
 
 const selectedStatus = ref('Todos')
 const selectedPriority = ref('Todas')
@@ -40,56 +21,7 @@ const searchTerm = ref('')
 const filters = ['Todos', 'Pendente', 'Em andamento', 'Concluida']
 const priorities = ['Todas', 'Baixa', 'Media', 'Alta']
 
-const tasks = ref<Task[]>([
-  {
-    id: 1,
-    nome: 'Regar canteiro de alfaces',
-    descricao: 'Verificar umidade do solo e realizar a rega no periodo da manha.',
-    status: 'Pendente',
-    prioridade: 'Alta',
-    data: '20/05/2026',
-    horta: 'Horta Comunitaria Central',
-    responsavel: 'Ana Paula',
-    tipo: 'Rega',
-    icon: Droplets,
-  },
-  {
-    id: 2,
-    nome: 'Revisar crescimento dos tomates',
-    descricao: 'Acompanhar folhas, galhos e sinais de pragas no plantio principal.',
-    status: 'Em andamento',
-    prioridade: 'Media',
-    data: '21/05/2026',
-    horta: 'Horta Comunitaria Central',
-    responsavel: 'Carlos Silva',
-    tipo: 'Inspecao',
-    icon: Sprout,
-  },
-  {
-    id: 3,
-    nome: 'Podar ervas aromaticas',
-    descricao: 'Remover folhas secas e organizar mudas de manjericao e hortela.',
-    status: 'Concluida',
-    prioridade: 'Baixa',
-    data: '18/05/2026',
-    horta: 'Canteiro de Ervas',
-    responsavel: 'Marina Costa',
-    tipo: 'Poda',
-    icon: Scissors,
-  },
-  {
-    id: 4,
-    nome: 'Preparar novo canteiro',
-    descricao: 'Separar ferramentas, adubo organico e area para o proximo plantio.',
-    status: 'Pendente',
-    prioridade: 'Alta',
-    data: '23/05/2026',
-    horta: 'Horta da Escola',
-    responsavel: 'Equipe da tarde',
-    tipo: 'Plantio',
-    icon: ClipboardList,
-  },
-])
+const tasks = ref([...mockTasks])
 
 const totalTarefas = computed(() => tasks.value.length)
 const totalPendentes = computed(() => tasks.value.filter((task) => task.status === 'Pendente').length)

@@ -1,29 +1,55 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import { CalendarDays, CheckCircle2, ClipboardList, Leaf, ListTodo, Save, Sprout, User2, X } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { getHortas, getPlantiosByHorta } from '@/services/Horta/horta.service'
+import { getMembrosByHorta } from '@/services/Membro/membro.service'
+import type { CreateTarefaPayload, TaskPriority } from '@/types/tarefa'
 
 const router = useRouter()
 const isSubmitting = ref(false)
+const isLoadingHortas = ref(true)
+const isLoadingVinculos = ref(false)
+const loadError = ref<string | null>(null)
 
-const hortas = ['Horta Comunitaria Central', 'Horta da Escola', 'Canteiro de Ervas']
-const plantios = ['Alface crespa', 'Tomate cereja', 'Manjericao', 'Sem plantio relacionado']
-const responsaveis = ['Ana Paula', 'Carlos Silva', 'Marina Costa', 'Equipe da tarde']
+type HortaOption = {
+  id: number
+  nome: string
+}
+
+type PlantioOption = {
+  id: number
+  especie?: {
+    nome?: string
+  } | null
+}
+
+type MembroOption = {
+  id: number
+  profile?: {
+    name?: string
+    email?: string
+  } | null
+}
+
+const hortas = ref<HortaOption[]>([])
+const plantios = ref<PlantioOption[]>([])
+const membros = ref<MembroOption[]>([])
 const tipos = ['Regar', 'Plantar', 'Colher', 'Limpar', 'Adubar', 'Inspecionar', 'Podar']
-const prioridades = ['Baixa', 'Media', 'Alta']
+const prioridades: TaskPriority[] = ['Baixa', 'Media', 'Alta']
 
 const form = reactive({
   titulo: '',
   descricao: '',
   tipo: '',
-  horta: '',
-  plantio: 'Sem plantio relacionado',
-  responsavel: '',
-  prioridade: 'Media',
+  hortaId: '',
+  plantioId: '',
+  membroId: '',
+  prioridade: 'Media' as TaskPriority,
   dataLimite: '',
 })
 
@@ -31,23 +57,85 @@ function resetForm() {
   form.titulo = ''
   form.descricao = ''
   form.tipo = ''
-  form.horta = ''
-  form.plantio = 'Sem plantio relacionado'
-  form.responsavel = ''
+  form.hortaId = ''
+  form.plantioId = ''
+  form.membroId = ''
   form.prioridade = 'Media'
   form.dataLimite = ''
 }
 
+async function loadHortas() {
+  try {
+    isLoadingHortas.value = true
+    loadError.value = null
+    const response = await getHortas()
+    hortas.value = response?.data ?? []
+  } catch {
+    loadError.value = 'Nao foi possivel carregar as hortas para vincular a tarefa.'
+  } finally {
+    isLoadingHortas.value = false
+  }
+}
+
+async function loadVinculosByHorta(hortaId: number) {
+  try {
+    isLoadingVinculos.value = true
+    loadError.value = null
+
+    const [plantiosResponse, membrosResponse] = await Promise.all([
+      getPlantiosByHorta(hortaId),
+      getMembrosByHorta(hortaId),
+    ])
+
+    plantios.value = plantiosResponse?.data ?? []
+    membros.value = membrosResponse.data?.data ?? []
+  } catch {
+    plantios.value = []
+    membros.value = []
+    loadError.value = 'Nao foi possivel carregar plantios e membros desta horta.'
+  } finally {
+    isLoadingVinculos.value = false
+  }
+}
+
+watch(
+  () => form.hortaId,
+  (hortaId) => {
+    form.plantioId = ''
+    form.membroId = ''
+    plantios.value = []
+    membros.value = []
+
+    if (hortaId) {
+      void loadVinculosByHorta(Number(hortaId))
+    }
+  },
+)
+
 function onSubmit() {
   isSubmitting.value = true
 
+  const payload: CreateTarefaPayload = {
+    titulo: form.titulo,
+    descricao: form.descricao,
+    tipo: form.tipo,
+    hortaId: Number(form.hortaId),
+    plantioId: form.plantioId ? Number(form.plantioId) : undefined,
+    membroId: form.membroId ? Number(form.membroId) : undefined,
+    prioridade: form.prioridade,
+    dataLimite: form.dataLimite,
+  }
+
   window.setTimeout(() => {
-    toast.success('Tarefa cadastrada com sucesso.')
+    console.info('Payload preparado para POST /Tarefa:', payload)
+    toast.success('Tarefa preparada com vinculos reais. A API de tarefas ainda precisa ser ligada.')
     resetForm()
     isSubmitting.value = false
     router.push('/tarefas')
   }, 500)
 }
+
+onMounted(loadHortas)
 </script>
 
 <template>
@@ -67,6 +155,10 @@ function onSubmit() {
       </section>
 
       <form class="rounded-xl border bg-white p-5 shadow-sm sm:p-6" @submit.prevent="onSubmit">
+        <div v-if="loadError" class="mb-5 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          {{ loadError }}
+        </div>
+
         <div class="mb-5 flex items-center gap-3 border-b pb-4">
           <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <ClipboardList class="h-5 w-5" />
@@ -118,12 +210,15 @@ function onSubmit() {
               <Sprout class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               <select
                 id="horta"
-                v-model="form.horta"
+                v-model="form.hortaId"
                 required
+                :disabled="isLoadingHortas"
                 class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 pl-9 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
               >
-                <option value="" disabled>Selecione uma horta</option>
-                <option v-for="horta in hortas" :key="horta" :value="horta">{{ horta }}</option>
+                <option value="" disabled>
+                  {{ isLoadingHortas ? 'Carregando hortas...' : 'Selecione uma horta' }}
+                </option>
+                <option v-for="horta in hortas" :key="horta.id" :value="horta.id">{{ horta.nome }}</option>
               </select>
             </div>
           </div>
@@ -134,10 +229,16 @@ function onSubmit() {
               <Leaf class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               <select
                 id="plantio"
-                v-model="form.plantio"
+                v-model="form.plantioId"
+                :disabled="!form.hortaId || isLoadingVinculos"
                 class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 pl-9 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
               >
-                <option v-for="plantio in plantios" :key="plantio" :value="plantio">{{ plantio }}</option>
+                <option value="">
+                  {{ isLoadingVinculos ? 'Carregando plantios...' : 'Sem plantio relacionado' }}
+                </option>
+                <option v-for="plantio in plantios" :key="plantio.id" :value="plantio.id">
+                  {{ plantio.especie?.nome ?? `Plantio #${plantio.id}` }}
+                </option>
               </select>
             </div>
           </div>
@@ -148,13 +249,16 @@ function onSubmit() {
               <User2 class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               <select
                 id="responsavel"
-                v-model="form.responsavel"
+                v-model="form.membroId"
                 required
+                :disabled="!form.hortaId || isLoadingVinculos"
                 class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 pl-9 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
               >
-                <option value="" disabled>Selecione um responsavel</option>
-                <option v-for="responsavel in responsaveis" :key="responsavel" :value="responsavel">
-                  {{ responsavel }}
+                <option value="" disabled>
+                  {{ isLoadingVinculos ? 'Carregando membros...' : 'Selecione um responsavel' }}
+                </option>
+                <option v-for="membro in membros" :key="membro.id" :value="membro.id">
+                  {{ membro.profile?.name ?? membro.profile?.email ?? `Membro #${membro.id}` }}
                 </option>
               </select>
             </div>
