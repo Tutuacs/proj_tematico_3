@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
-import { CalendarDays, CheckCircle2, Edit, Eye, MoreHorizontal, Trash2, User2, Sprout } from 'lucide-vue-next'
+import { CalendarDays, CheckCircle2, Edit, Eye, Trash2, User2, Sprout } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 
 type TaskStatus = 'Pendente' | 'Em andamento' | 'Concluida'
@@ -17,6 +17,11 @@ defineProps<{
   responsavel: string
   tipo: string
   icon: Component
+}>()
+
+defineEmits<{
+  delete: [id: number]
+  complete: [id: number]
 }>()
 
 function statusClasses(status: TaskStatus) {
@@ -92,25 +97,32 @@ function priorityClasses(prioridade: TaskPriority) {
         variant="outline"
         size="sm"
         class="w-full border-green-200 text-green-700 transition-colors hover:bg-green-50 hover:text-green-800"
+        :disabled="status === 'Concluida'"
+        @click="$emit('complete', id)"
       >
         <CheckCircle2 class="h-4 w-4" />
-        Concluir
+        {{ status === 'Concluida' ? 'Concluida' : 'Concluir' }}
       </Button>
 
-      <div class="grid grid-cols-4 gap-1 sm:flex">
+      <div class="grid grid-cols-3 gap-1 sm:flex">
         <Button as-child variant="outline" size="sm" class="px-2" title="Ver detalhes">
           <RouterLink :to="`/tarefas/${id}`">
             <Eye class="h-4 w-4" />
           </RouterLink>
         </Button>
-        <Button variant="outline" size="sm" class="px-2" title="Editar">
-          <Edit class="h-4 w-4" />
+        <Button as-child variant="outline" size="sm" class="px-2" title="Editar">
+          <RouterLink :to="`/tarefas/nova?edit=${id}`">
+            <Edit class="h-4 w-4" />
+          </RouterLink>
         </Button>
-        <Button variant="outline" size="sm" class="px-2 text-red-600 hover:bg-red-50 hover:text-red-700" title="Excluir">
+        <Button
+          variant="outline"
+          size="sm"
+          class="px-2 text-red-600 hover:bg-red-50 hover:text-red-700"
+          title="Excluir"
+          @click="$emit('delete', id)"
+        >
           <Trash2 class="h-4 w-4" />
-        </Button>
-        <Button variant="outline" size="sm" class="px-2" title="Mais acoes">
-          <MoreHorizontal class="h-4 w-4" />
         </Button>
       </div>
     </div>

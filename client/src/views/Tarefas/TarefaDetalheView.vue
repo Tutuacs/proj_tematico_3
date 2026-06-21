@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import {
   ArrowLeft,
   CalendarDays,
@@ -13,13 +13,32 @@ import {
   User2,
 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
-import { mockTasks } from '@/mocks/tarefas'
+import { completeStoredTarefa, deleteStoredTarefa, getStoredTarefas } from '@/services/Tarefa/tarefaStorage'
 import type { TaskPriority, TaskStatus } from '@/types/tarefa'
 
 const route = useRoute()
+const router = useRouter()
 
 const tarefaId = computed(() => Number(route.params.id))
-const tarefa = computed(() => mockTasks.find((task) => task.id === tarefaId.value) ?? null)
+const tarefa = computed(() => getStoredTarefas().find((task) => task.id === tarefaId.value) ?? null)
+
+function deleteTask() {
+  if (!tarefa.value || !confirm('Tem certeza que deseja excluir esta tarefa?')) {
+    return
+  }
+
+  deleteStoredTarefa(tarefa.value.id)
+  router.push('/tarefas')
+}
+
+function completeTask() {
+  if (!tarefa.value) {
+    return
+  }
+
+  completeStoredTarefa(tarefa.value.id)
+  router.push('/tarefas')
+}
 
 function statusClasses(status: TaskStatus) {
   return {
@@ -105,15 +124,26 @@ function priorityClasses(prioridade: TaskPriority) {
           <article class="rounded-xl border bg-white p-5 shadow-sm">
             <h2 class="text-base font-semibold text-gray-900">Acoes</h2>
             <div class="mt-4 grid gap-2 sm:grid-cols-2">
-              <Button variant="outline" class="justify-start border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800">
+              <Button
+                variant="outline"
+                class="justify-start border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800"
+                :disabled="tarefa.status === 'Concluida'"
+                @click="completeTask"
+              >
                 <CheckCircle2 class="h-4 w-4" />
-                Concluir tarefa
+                {{ tarefa.status === 'Concluida' ? 'Tarefa concluida' : 'Concluir tarefa' }}
               </Button>
-              <Button variant="outline" class="justify-start">
-                <Edit class="h-4 w-4" />
-                Editar
+              <Button as-child variant="outline" class="justify-start">
+                <RouterLink :to="`/tarefas/nova?edit=${tarefa.id}`">
+                  <Edit class="h-4 w-4" />
+                  Editar
+                </RouterLink>
               </Button>
-              <Button variant="outline" class="justify-start text-red-600 hover:bg-red-50 hover:text-red-700 sm:col-span-2">
+              <Button
+                variant="outline"
+                class="justify-start text-red-600 hover:bg-red-50 hover:text-red-700 sm:col-span-2"
+                @click="deleteTask"
+              >
                 <Trash2 class="h-4 w-4" />
                 Excluir
               </Button>

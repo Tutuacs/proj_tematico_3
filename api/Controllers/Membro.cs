@@ -26,6 +26,13 @@ public class MembroController(IMembroService membroService) : ControllerBase
                 Id = membro.Profile.Id,
                 Name = membro.Profile.Name,
                 Email = membro.Profile.Email
+            } : null,
+            Horta = membro.Horta != null ? new HortaResponseDto
+            {
+                Id = membro.Horta.Id,
+                Nome = membro.Horta.Nome,
+                Descricao = membro.Horta.Descricao,
+                Local = membro.Horta.Local
             } : null
         };
     }

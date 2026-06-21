@@ -1,16 +1,21 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import { CalendarDays, CheckCircle2, ClipboardList, Leaf, ListTodo, Save, Sprout, User2, X } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { getHortas, getPlantiosByHorta } from '@/services/Horta/horta.service'
-import { getMembrosByHorta } from '@/services/Membro/membro.service'
+import { getMembrosByHorta, getMembrosByPerfil } from '@/services/Membro/membro.service'
+import { getStoredTarefas, saveStoredTarefa, updateStoredTarefa } from '@/services/Tarefa/tarefaStorage'
+import { useAuthStore } from '@/stores/auth'
+import type { ApiResponse } from '@/types/api'
 import type { CreateTarefaPayload, TaskPriority } from '@/types/tarefa'
 
 const router = useRouter()
+const route = useRoute()
+const authStore = useAuthStore()
 const isSubmitting = ref(false)
 const isLoadingHortas = ref(true)
 const isLoadingVinculos = ref(false)
@@ -19,6 +24,8 @@ const loadError = ref<string | null>(null)
 type HortaOption = {
   id: number
   nome: string
+  descricao?: string | null
+  local?: string
 }
 
 type PlantioOption = {
@@ -30,10 +37,14 @@ type PlantioOption = {
 
 type MembroOption = {
   id: number
+  hortaId: number
+  perfilId?: string
+  role?: string
   profile?: {
     name?: string
     email?: string
   } | null
+  horta?: HortaOption | null
 }
 
 const hortas = ref<HortaOption[]>([])
@@ -41,6 +52,7 @@ const plantios = ref<PlantioOption[]>([])
 const membros = ref<MembroOption[]>([])
 const tipos = ['Regar', 'Plantar', 'Colher', 'Limpar', 'Adubar', 'Inspecionar', 'Podar']
 const prioridades: TaskPriority[] = ['Baixa', 'Media', 'Alta']
+const editingTaskId = ref<number | null>(null)
 
 const form = reactive({
   titulo: '',
@@ -64,17 +76,74 @@ function resetForm() {
   form.dataLimite = ''
 }
 
+function extractData<T>(response: ApiResponse<T> | { data?: ApiResponse<T> } | null | undefined): T | null {
+  if (!response) return null
+
+  if ('data' in response && response.data && typeof response.data === 'object' && 'data' in response.data) {
+    return response.data.data ?? null
+  }
+
+  return (response as ApiResponse<T>).data ?? null
+}
+
 async function loadHortas() {
   try {
     isLoadingHortas.value = true
     loadError.value = null
-    const response = await getHortas()
-    hortas.value = response?.data ?? []
+    let hortasCadastradas: HortaOption[] = []
+
+    if (authStore.user?.id) {
+      const response = await getMembrosByPerfil(authStore.user.id)
+      const vinculos = extractData<MembroOption[]>(response) ?? []
+      const uniqueHortas = new Map<number, HortaOption>()
+
+      vinculos.forEach((vinculo) => {
+        if (vinculo.horta) {
+          uniqueHortas.set(vinculo.horta.id, vinculo.horta)
+        }
+      })
+
+      hortasCadastradas = [...uniqueHortas.values()]
+    }
+
+    if (hortasCadastradas.length === 0) {
+      const response = await getHortas()
+      hortasCadastradas = extractData<HortaOption[]>(response) ?? []
+    }
+
+    hortas.value = hortasCadastradas
   } catch {
     loadError.value = 'Nao foi possivel carregar as hortas para vincular a tarefa.'
   } finally {
     isLoadingHortas.value = false
   }
+}
+
+function loadTaskForEdit() {
+  const editId = Number(route.query.edit)
+
+  if (!Number.isFinite(editId) || editId <= 0) {
+    editingTaskId.value = null
+    return
+  }
+
+  const task = getStoredTarefas().find((item) => item.id === editId)
+
+  if (!task) {
+    editingTaskId.value = null
+    loadError.value = 'Tarefa nao encontrada para edicao.'
+    return
+  }
+
+  editingTaskId.value = task.id
+  form.titulo = task.nome
+  form.descricao = task.descricao
+  form.tipo = task.tipo
+  form.hortaId = String(task.hortaId)
+  form.plantioId = task.plantioId ? String(task.plantioId) : ''
+  form.membroId = task.responsavelId ? String(task.responsavelId) : ''
+  form.prioridade = task.prioridade
+  form.dataLimite = task.data
 }
 
 async function loadVinculosByHorta(hortaId: number) {
@@ -87,8 +156,8 @@ async function loadVinculosByHorta(hortaId: number) {
       getMembrosByHorta(hortaId),
     ])
 
-    plantios.value = plantiosResponse?.data ?? []
-    membros.value = membrosResponse.data?.data ?? []
+    plantios.value = extractData<PlantioOption[]>(plantiosResponse) ?? []
+    membros.value = extractData<MembroOption[]>(membrosResponse) ?? []
   } catch {
     plantios.value = []
     membros.value = []
@@ -115,6 +184,10 @@ watch(
 function onSubmit() {
   isSubmitting.value = true
 
+  const selectedHorta = hortas.value.find((horta) => horta.id === Number(form.hortaId))
+  const selectedPlantio = plantios.value.find((plantio) => plantio.id === Number(form.plantioId))
+  const selectedMembro = membros.value.find((membro) => membro.id === Number(form.membroId))
+
   const payload: CreateTarefaPayload = {
     titulo: form.titulo,
     descricao: form.descricao,
@@ -128,14 +201,38 @@ function onSubmit() {
 
   window.setTimeout(() => {
     console.info('Payload preparado para POST /Tarefa:', payload)
-    toast.success('Tarefa preparada com vinculos reais. A API de tarefas ainda precisa ser ligada.')
+    const taskData = {
+      nome: form.titulo,
+      descricao: form.descricao,
+      prioridade: form.prioridade,
+      data: form.dataLimite,
+      hortaId: Number(form.hortaId),
+      horta: selectedHorta?.nome ?? `Horta #${form.hortaId}`,
+      responsavelId: Number(form.membroId),
+      responsavel: selectedMembro?.profile?.name ?? selectedMembro?.profile?.email ?? `Membro #${form.membroId}`,
+      tipo: form.tipo,
+      plantioId: form.plantioId ? Number(form.plantioId) : undefined,
+      plantio: selectedPlantio?.especie?.nome ?? 'Sem plantio relacionado',
+    }
+
+    if (editingTaskId.value) {
+      updateStoredTarefa(editingTaskId.value, taskData)
+      toast.success('Tarefa atualizada com sucesso.')
+    } else {
+      saveStoredTarefa(taskData)
+      toast.success('Tarefa cadastrada com sucesso.')
+    }
+
     resetForm()
     isSubmitting.value = false
     router.push('/tarefas')
   }, 500)
 }
 
-onMounted(loadHortas)
+onMounted(async () => {
+  await loadHortas()
+  loadTaskForEdit()
+})
 </script>
 
 <template>
@@ -145,9 +242,9 @@ onMounted(loadHortas)
         <div class="max-w-3xl">
           <span class="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
             <ListTodo class="h-4 w-4" />
-            Nova tarefa
+            {{ editingTaskId ? 'Editar tarefa' : 'Nova tarefa' }}
           </span>
-          <h1 class="mt-4 text-3xl font-bold text-gray-900">Cadastrar tarefa</h1>
+          <h1 class="mt-4 text-3xl font-bold text-gray-900">{{ editingTaskId ? 'Editar tarefa' : 'Cadastrar tarefa' }}</h1>
           <p class="mt-2 text-muted-foreground">
             Preencha as informacoes para organizar as atividades da horta.
           </p>
@@ -296,7 +393,7 @@ onMounted(loadHortas)
           <Button type="submit" class="sm:w-fit" :disabled="isSubmitting">
             <CheckCircle2 v-if="isSubmitting" class="h-4 w-4 animate-pulse" />
             <Save v-else class="h-4 w-4" />
-            {{ isSubmitting ? 'Salvando...' : 'Salvar tarefa' }}
+            {{ isSubmitting ? 'Salvando...' : editingTaskId ? 'Atualizar tarefa' : 'Salvar tarefa' }}
           </Button>
         </div>
       </form>

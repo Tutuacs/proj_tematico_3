@@ -7,31 +7,20 @@ import HortaCard from "@/components/HortaCard.vue";
 import { useAuthStore } from "@/stores/auth";
 import { getHortas, getPlantiosByHorta } from "@/services/Horta/horta.service";
 import { getMembrosByHorta } from "@/services/Membro/membro.service";
+import { getStoredTarefas } from "@/services/Tarefa/tarefaStorage";
 
 const authStore = useAuthStore();
 
 const hortas = ref<any[]>([]);
 
-const tarefas = ref([
-  {
-    id: 1,
-    titulo: "Regar canteiro de alfaces",
-    status: "Pendente",
-    data: "20/05/2026",
-  },
-  {
-    id: 2,
-    titulo: "Revisar crescimento dos tomates",
-    status: "Em andamento",
-    data: "21/05/2026",
-  },
-  {
-    id: 3,
-    titulo: "Podar ervas aromaticas",
-    status: "Concluida",
-    data: "18/05/2026",
-  },
-]);
+const tarefas = ref(
+  getStoredTarefas().slice(0, 3).map((tarefa) => ({
+    id: tarefa.id,
+    titulo: tarefa.nome,
+    status: tarefa.status,
+    data: tarefa.data,
+  })),
+);
 
 const userName = computed(() => authStore.user?.name || authStore.user?.email || "visitante");
 
@@ -109,8 +98,8 @@ onMounted(async () => {
 
 <template>
   <main class="flex-1 overflow-auto">
-    <div class="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-7xl flex-col justify-center gap-8 px-4 py-8 sm:px-6 lg:px-8">
-      <section class="grid items-start gap-6 lg:grid-cols-[1.35fr_0.65fr]">
+    <div class="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+      <section class="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div class="rounded-lg border bg-card p-5 shadow-sm sm:p-6">
           <div class="flex h-full flex-col gap-4">
             <div class="space-y-3">
@@ -150,138 +139,140 @@ onMounted(async () => {
           </div>
         </div>
 
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+        <div class="grid gap-3 sm:grid-cols-2">
           <article
             v-for="card in resumoCards"
             :key="card.titulo"
-            class="rounded-lg border bg-card p-5 shadow-sm"
+            class="rounded-lg border bg-card p-4 shadow-sm"
           >
-            <div class="flex items-center justify-between gap-4">
-              <div>
-                <p class="text-sm font-medium text-muted-foreground">{{ card.titulo }}</p>
-                <p class="mt-2 text-3xl font-bold">{{ card.valor }}</p>
-                <p class="mt-1 text-sm text-muted-foreground">{{ card.descricao }}</p>
+            <div class="flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <p class="text-xs font-medium text-muted-foreground">{{ card.titulo }}</p>
+                <p class="mt-1 text-2xl font-bold leading-none">{{ card.valor }}</p>
+                <p class="mt-1 truncate text-xs text-muted-foreground">{{ card.descricao }}</p>
               </div>
 
-              <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                <component :is="card.icon" class="h-5 w-5" />
+              <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                <component :is="card.icon" class="h-4 w-4" />
               </div>
             </div>
           </article>
         </div>
       </section>
 
-      <section class="rounded-lg border bg-card p-5 shadow-sm sm:p-6">
-        <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 class="text-xl font-semibold">Tarefas Recentes</h2>
-            <p class="mt-1 text-sm text-muted-foreground">
-              Atividades planejadas para manter a rotina da horta organizada.
-            </p>
-          </div>
-
-          <RouterLink
-            to="/tarefas"
-            class="inline-flex items-center justify-center gap-2 rounded-md border bg-background px-3 py-2 text-sm font-medium transition hover:bg-accent hover:text-accent-foreground"
-          >
-            Ver tarefas
-            <ArrowRight class="h-4 w-4" />
-          </RouterLink>
-        </div>
-
-        <div class="grid gap-4 md:grid-cols-3">
-          <RouterLink
-            v-for="tarefa in tarefas"
-            :key="tarefa.id"
-            to="/tarefas"
-            class="rounded-lg border bg-card p-4 shadow-sm transition hover:border-primary/40 hover:shadow-md"
-          >
-            <div class="mb-4 flex items-start justify-between gap-3">
-              <div class="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
-                <ClipboardList class="h-5 w-5" />
-              </div>
-
-              <span
-                class="rounded-full px-2.5 py-1 text-xs font-medium"
-                :class="tarefa.status === 'Concluida' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'"
-              >
-                {{ tarefa.status }}
-              </span>
+      <div class="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+        <section class="rounded-lg border bg-card p-5 shadow-sm sm:p-6">
+          <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 class="text-xl font-semibold">Tarefas Recentes</h2>
+              <p class="mt-1 text-sm text-muted-foreground">
+                Atividades planejadas para manter a rotina organizada.
+              </p>
             </div>
 
-            <h3 class="line-clamp-2 font-semibold text-foreground">{{ tarefa.titulo }}</h3>
-
-            <div class="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-              <CalendarDays class="h-4 w-4 text-green-600" />
-              <span>{{ tarefa.data }}</span>
-            </div>
-
-            <p class="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-              <CheckCircle2 class="h-3.5 w-3.5" />
-              Clique para acompanhar
-            </p>
-          </RouterLink>
-        </div>
-      </section>
-
-      <section class="rounded-lg border bg-card p-5 shadow-sm sm:p-6">
-        <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 class="text-xl font-semibold">Hortas Ativas</h2>
-            <p class="mt-1 text-sm text-muted-foreground">
-              Plantios vinculados a sua horta principal.
-            </p>
+            <RouterLink
+              to="/tarefas"
+              class="inline-flex items-center justify-center gap-2 rounded-md border bg-background px-3 py-2 text-sm font-medium transition hover:bg-accent hover:text-accent-foreground"
+            >
+              Ver tarefas
+              <ArrowRight class="h-4 w-4" />
+            </RouterLink>
           </div>
 
-          <RouterLink
-            to="/plantas"
-            class="inline-flex items-center justify-center gap-2 rounded-md border bg-background px-3 py-2 text-sm font-medium transition hover:bg-accent hover:text-accent-foreground"
-          >
-            Ver especies
-            <ArrowRight class="h-4 w-4" />
-          </RouterLink>
-        </div>
+          <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+            <RouterLink
+              v-for="tarefa in tarefas"
+              :key="tarefa.id"
+              :to="`/tarefas/${tarefa.id}`"
+              class="rounded-lg border bg-card p-4 shadow-sm transition hover:border-primary/40 hover:shadow-md"
+            >
+              <div class="mb-4 flex items-start justify-between gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
+                  <ClipboardList class="h-5 w-5" />
+                </div>
 
-        <div
-          v-if="hortas.length > 0"
-          class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-        >
-          <RouterLink
-            v-for="horta in hortas"
-            :key="horta.id"
-            :to="`/horta/${horta.id}`"
-            class="rounded-lg border bg-card p-4 shadow-sm hover:shadow-md transition-shadow"
-          >
-            <h3 class="font-semibold text-foreground">{{ horta.nome }}</h3>
-            <div class="mt-4 space-y-2">
-              <div class="flex items-center gap-2 text-sm text-muted-foreground">
-                <Flower2 class="h-4 w-4 text-green-600" />
-                <span>{{ horta.plantios?.length || 0 }} plantio{{ (horta.plantios?.length || 0) !== 1 ? 's' : '' }}</span>
+                <span
+                  class="rounded-full px-2.5 py-1 text-xs font-medium"
+                  :class="tarefa.status === 'Concluida' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'"
+                >
+                  {{ tarefa.status }}
+                </span>
               </div>
-              <div class="flex items-center gap-2 text-sm text-muted-foreground">
-                <Users2 class="h-4 w-4 text-blue-600" />
-                <span>{{ horta.membros?.length || 0 }} membro{{ (horta.membros?.length || 0) !== 1 ? 's' : '' }}</span>
-              </div>
-            </div>
-            <p class="mt-3 text-xs text-muted-foreground">
-              Clique para gerenciar
-            </p>
-          </RouterLink>
-        </div>
 
-        <div
-          v-else
-          class="flex min-h-56 flex-col items-center justify-center rounded-lg border border-dashed bg-muted/30 px-6 py-10 text-center"
-        >
-          <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-md bg-primary/10 text-primary">
-            <Sprout class="h-6 w-6" />
+              <h3 class="line-clamp-2 font-semibold text-foreground">{{ tarefa.titulo }}</h3>
+
+              <div class="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+                <CalendarDays class="h-4 w-4 text-green-600" />
+                <span>{{ tarefa.data }}</span>
+              </div>
+
+              <p class="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+                <CheckCircle2 class="h-3.5 w-3.5" />
+                Clique para acompanhar
+              </p>
+            </RouterLink>
           </div>
-          <h3 class="text-lg font-semibold">Nenhuma horta cadastrada ainda</h3>
-          <p class="mt-2 max-w-md text-sm text-muted-foreground">
-            Cadastre uma especie ou acesse a area de hortas para comecar a organizar seus plantios.
-          </p>
-        </div>
-      </section>
+        </section>
+
+        <section class="rounded-lg border bg-card p-5 shadow-sm sm:p-6">
+          <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 class="text-xl font-semibold">Hortas Ativas</h2>
+              <p class="mt-1 text-sm text-muted-foreground">
+                Plantios vinculados a sua horta principal.
+              </p>
+            </div>
+
+            <RouterLink
+              to="/plantas"
+              class="inline-flex items-center justify-center gap-2 rounded-md border bg-background px-3 py-2 text-sm font-medium transition hover:bg-accent hover:text-accent-foreground"
+            >
+              Ver especies
+              <ArrowRight class="h-4 w-4" />
+            </RouterLink>
+          </div>
+
+          <div
+            v-if="hortas.length > 0"
+            class="grid gap-4 sm:grid-cols-2"
+          >
+            <RouterLink
+              v-for="horta in hortas"
+              :key="horta.id"
+              :to="`/horta/${horta.id}`"
+              class="rounded-lg border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
+            >
+              <h3 class="font-semibold text-foreground">{{ horta.nome }}</h3>
+              <div class="mt-4 space-y-2">
+                <div class="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Flower2 class="h-4 w-4 text-green-600" />
+                  <span>{{ horta.plantios?.length || 0 }} plantio{{ (horta.plantios?.length || 0) !== 1 ? 's' : '' }}</span>
+                </div>
+                <div class="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Users2 class="h-4 w-4 text-blue-600" />
+                  <span>{{ horta.membros?.length || 0 }} membro{{ (horta.membros?.length || 0) !== 1 ? 's' : '' }}</span>
+                </div>
+              </div>
+              <p class="mt-3 text-xs text-muted-foreground">
+                Clique para gerenciar
+              </p>
+            </RouterLink>
+          </div>
+
+          <div
+            v-else
+            class="flex min-h-56 flex-col items-center justify-center rounded-lg border border-dashed bg-muted/30 px-6 py-10 text-center"
+          >
+            <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-md bg-primary/10 text-primary">
+              <Sprout class="h-6 w-6" />
+            </div>
+            <h3 class="text-lg font-semibold">Nenhuma horta cadastrada ainda</h3>
+            <p class="mt-2 max-w-md text-sm text-muted-foreground">
+              Cadastre uma especie ou acesse a area de hortas para comecar a organizar seus plantios.
+            </p>
+          </div>
+        </section>
+      </div>
     </div>
   </main>
 </template>

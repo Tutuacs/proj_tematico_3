@@ -2,7 +2,6 @@
 import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import {
-  CalendarCheck2,
   ListTodo,
   Plus,
   Search,
@@ -11,7 +10,8 @@ import {
 import TaskCard from '@/components/TaskCard.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { mockTasks } from '@/mocks/tarefas'
+import { completeStoredTarefa, deleteStoredTarefa, getStoredTarefas } from '@/services/Tarefa/tarefaStorage'
+import type { Task } from '@/types/tarefa'
 
 const selectedStatus = ref('Todos')
 const selectedPriority = ref('Todas')
@@ -21,7 +21,7 @@ const searchTerm = ref('')
 const filters = ['Todos', 'Pendente', 'Em andamento', 'Concluida']
 const priorities = ['Todas', 'Baixa', 'Media', 'Alta']
 
-const tasks = ref([...mockTasks])
+const tasks = ref<Task[]>(getStoredTarefas().map((task) => ({ ...task, icon: ListTodo })))
 
 const totalTarefas = computed(() => tasks.value.length)
 const totalPendentes = computed(() => tasks.value.filter((task) => task.status === 'Pendente').length)
@@ -46,6 +46,22 @@ const visibleTasks = computed(() => {
     return matchesStatus && matchesPriority && matchesHorta && matchesSearch
   })
 })
+
+function deleteTask(id: number) {
+  if (!confirm('Tem certeza que deseja excluir esta tarefa?')) {
+    return
+  }
+
+  deleteStoredTarefa(id)
+  tasks.value = tasks.value.filter((task) => task.id !== id)
+}
+
+function completeTask(id: number) {
+  completeStoredTarefa(id)
+  tasks.value = tasks.value.map((task) => (
+    task.id === id ? { ...task, status: 'Concluida' } : task
+  ))
+}
 </script>
 
 <template>
@@ -171,6 +187,8 @@ const visibleTasks = computed(() => {
               :responsavel="task.responsavel"
               :tipo="task.tipo"
               :icon="task.icon"
+              @complete="completeTask"
+              @delete="deleteTask"
             />
           </div>
         </section>
@@ -190,16 +208,6 @@ const visibleTasks = computed(() => {
               <p class="text-xs font-medium text-gray-500">Para acompanhar primeiro</p>
               <p class="mt-1 text-sm font-semibold text-gray-900">{{ totalPrioridadeAlta }} tarefas criticas</p>
               <p class="text-xs text-gray-600">{{ totalVencidas }} vencidas ou atrasadas</p>
-            </div>
-
-            <div class="rounded-lg border border-green-200 bg-green-50 p-3">
-              <p class="flex items-center gap-2 text-xs font-semibold text-green-800">
-                <CalendarCheck2 class="h-3.5 w-3.5" />
-                Rotina da horta
-              </p>
-              <p class="mt-1 text-xs text-green-700">
-                Use os cards para acompanhar atividades, datas e prioridades sem sair da tela.
-              </p>
             </div>
 
             <div class="rounded-lg border border-amber-200 bg-amber-50 p-3">
