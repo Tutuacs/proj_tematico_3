@@ -1,7 +1,20 @@
 import { api } from "../api";
 
+export type CreateHortaPayload = {
+  nome: string
+  descricao?: string
+  local: string
+  largura: number
+  profundidade: number
+}
+
 export async function getHortas() {
   const response = await api.get('/Horta');
+  return response.data;
+}
+
+export async function createHorta(data: CreateHortaPayload) {
+  const response = await api.post('/Horta', data);
   return response.data;
 }
 

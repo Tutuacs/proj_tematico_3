@@ -30,6 +30,7 @@ const menuItems = [
 ]
 
 const userDisplayName = computed(() => authStore.user?.name || authStore.user?.email || 'Usuário')
+const isHortaRoute = computed(() => route.path === '/horta')
 const isPlantasRoute = computed(() => route.path === '/plantas')
 const isTarefasRoute = computed(() => route.path === '/tarefas')
 const hortaId = computed(() => route.params.id?.toString() ?? '')
@@ -96,6 +97,13 @@ function handleLogout() {
     </SidebarContent>
 
     <SidebarFooter class="border-t p-4">
+      <Button v-if="isHortaRoute" as-child variant="default" size="sm" class="w-full">
+        <RouterLink to="/horta/nova" class="flex items-center gap-2">
+          <Plus class="size-4" />
+          Cadastrar horta
+        </RouterLink>
+      </Button>
+
       <Button v-if="isPlantasRoute" as-child variant="default" size="sm" class="w-full">
         <RouterLink to="/plantas/nova-especie" class="flex items-center gap-2">
           <Plus class="size-4" />

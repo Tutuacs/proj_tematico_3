@@ -4,6 +4,7 @@ import HortaView from '@/views/Hortas/HortaView.vue'
 import HortaDetalheView from '@/views/Hortas/HortaDetalheView.vue'
 import HortaPlantiosView from '@/views/Hortas/HortaPlantiosView.vue'
 import HortaMembrosView from '@/views/Hortas/HortaMembrosView.vue'
+import NovaHortaView from '@/views/Hortas/NovaHortaView.vue'
 import PlantasView from '@/views/Plantas/PlantasView.vue'
 import NovaEspecieView from '@/views/Plantas/NovaEspecieView.vue'
 import TarefasView from '@/views/TarefasView.vue'
@@ -27,6 +28,11 @@ const router = createRouter({
       path: '/horta',
       name: 'horta',
       component: HortaView,
+    },
+    {
+      path: '/horta/nova',
+      name: 'nova-horta',
+      component: NovaHortaView,
     },
     {
       path: '/horta/:id',
