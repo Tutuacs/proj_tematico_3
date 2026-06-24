@@ -14,7 +14,7 @@ namespace api.Migrations
                                 INSERT INTO plantio (EspecieId, HortaId, DataPlantio, Quantidade, Status, CreatedAt)
                                 SELECT e.Id, h.Id, CURRENT_DATE(), 20, 0, CURRENT_DATE()
                                 FROM especie e
-                                INNER JOIN horta h ON h.Nome = 'Horta Teste' AND h.Local = 'Local de teste'
+                                INNER JOIN horta h ON h.Nome = 'Horta Comunitaria Central' AND h.Local = 'Rua das Flores, 120 - Centro'
                                 WHERE e.Nome = 'Alface'
                                     AND NOT EXISTS (
                                             SELECT 1 FROM plantio p
@@ -24,7 +24,7 @@ namespace api.Migrations
                                 INSERT INTO plantio (EspecieId, HortaId, DataPlantio, Quantidade, Status, CreatedAt)
                                 SELECT e.Id, h.Id, DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY), 12, 0, CURRENT_DATE()
                                 FROM especie e
-                                INNER JOIN horta h ON h.Nome = 'Horta Teste' AND h.Local = 'Local de teste'
+                                INNER JOIN horta h ON h.Nome = 'Horta Comunitaria Central' AND h.Local = 'Rua das Flores, 120 - Centro'
                                 WHERE e.Nome = 'Tomate'
                                     AND NOT EXISTS (
                                             SELECT 1 FROM plantio p
@@ -34,7 +34,7 @@ namespace api.Migrations
                                 INSERT INTO plantio (EspecieId, HortaId, DataPlantio, Quantidade, Status, CreatedAt)
                                 SELECT e.Id, h.Id, DATE_SUB(CURRENT_DATE(), INTERVAL 15 DAY), 30, 0, CURRENT_DATE()
                                 FROM especie e
-                                INNER JOIN horta h ON h.Nome = 'Horta Teste' AND h.Local = 'Local de teste'
+                                INNER JOIN horta h ON h.Nome = 'Horta Comunitaria Central' AND h.Local = 'Rua das Flores, 120 - Centro'
                                 WHERE e.Nome = 'Cenoura'
                                     AND NOT EXISTS (
                                             SELECT 1 FROM plantio p
@@ -44,7 +44,7 @@ namespace api.Migrations
                                 INSERT INTO plantio (EspecieId, HortaId, DataPlantio, Quantidade, Status, CreatedAt)
                                 SELECT e.Id, h.Id, DATE_SUB(CURRENT_DATE(), INTERVAL 3 DAY), 18, 0, CURRENT_DATE()
                                 FROM especie e
-                                INNER JOIN horta h ON h.Nome = 'Horta Teste' AND h.Local = 'Local de teste'
+                                INNER JOIN horta h ON h.Nome = 'Horta Comunitaria Central' AND h.Local = 'Rua das Flores, 120 - Centro'
                                 WHERE e.Nome = 'Cebolinha'
                                     AND NOT EXISTS (
                                             SELECT 1 FROM plantio p
@@ -61,8 +61,8 @@ namespace api.Migrations
                 FROM plantio p
                 INNER JOIN horta h ON h.Id = p.HortaId
                 INNER JOIN especie e ON e.Id = p.EspecieId
-                WHERE h.Nome = 'Horta Teste'
-                  AND h.Local = 'Local de teste'
+                WHERE h.Nome = 'Horta Comunitaria Central'
+                  AND h.Local = 'Rua das Flores, 120 - Centro'
                   AND e.Nome IN ('Alface', 'Tomate', 'Cenoura', 'Cebolinha');
             ");
         }
