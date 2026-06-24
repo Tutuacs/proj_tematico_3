@@ -15,3 +15,11 @@ Criar tela para Editar ou alterar a de criação para Editar também...
 /login (Alterar a tela de login para ter uma imagem de planta no local verde, a imagem pode ser meio transparente
 gradient da esquerda pra direita verde)
 /register (Tela não ta entrando?)
+
+Pendencias para alterar:
+
+Tela de listar tarefas/especifica, permitindo que qualquer um dê a tarefa como concluida..
+(mostrar a data no formato DD/MM/YYYY)
+(Deveria deixar apenas admin/usuario responsável), deve deixar atribuir a atividade a outro responsável("atribuir a mim")
+
+Tela membro, deixa editar qualquer membro, botar qualquer role, apenas admin pode mudar para admin, não deve deixar o admin alterar propria role.

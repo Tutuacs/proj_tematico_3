@@ -3,24 +3,17 @@ import { computed, onMounted, ref } from "vue";
 import { RouterLink } from "vue-router";
 import { ArrowRight, CalendarDays, CheckCircle2, ClipboardList, Leaf, Plus, Sprout, Users2, Flower2 } from "lucide-vue-next";
 
-import HortaCard from "@/components/HortaCard.vue";
 import { useAuthStore } from "@/stores/auth";
 import { getHortas, getPlantiosByHorta } from "@/services/Horta/horta.service";
 import { getMembrosByHorta } from "@/services/Membro/membro.service";
-import { getStoredTarefas } from "@/services/Tarefa/tarefaStorage";
+import { getTarefas } from "@/services/Tarefa/tarefa.service";
+import { statusClasses, statusLabel } from "@/services/Tarefa/tarefaLabels";
+import type { Task } from "@/types/tarefa";
 
 const authStore = useAuthStore();
 
 const hortas = ref<any[]>([]);
-
-const tarefas = ref(
-  getStoredTarefas().slice(0, 3).map((tarefa) => ({
-    id: tarefa.id,
-    titulo: tarefa.nome,
-    status: tarefa.status,
-    data: tarefa.data,
-  })),
-);
+const tarefas = ref<Task[]>([]);
 
 const userName = computed(() => authStore.user?.name || authStore.user?.email || "visitante");
 
@@ -65,6 +58,14 @@ const resumoCards = computed(() => [
   },
 ]);
 
+function extractData<T>(response: any): T | null {
+  if (!response) return null
+  if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+    return response.data.data ?? null
+  }
+  return response.data ?? null
+}
+
 onMounted(async () => {
   try {
     const res = await getHortas();
@@ -90,6 +91,14 @@ onMounted(async () => {
     );
     
     hortas.value = enrichedHortas;
+  } catch (error) {
+    console.error(error);
+  }
+
+  try {
+    const tarefasRes = await getTarefas();
+    const tarefasData = extractData<Task[]>(tarefasRes) ?? [];
+    tarefas.value = tarefasData.slice(0, 3);
   } catch (error) {
     console.error(error);
   }
@@ -192,18 +201,18 @@ onMounted(async () => {
                 </div>
 
                 <span
-                  class="rounded-full px-2.5 py-1 text-xs font-medium"
-                  :class="tarefa.status === 'Concluida' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'"
+                  class="rounded-full border px-2.5 py-1 text-xs font-medium"
+                  :class="statusClasses(tarefa.status)"
                 >
-                  {{ tarefa.status }}
+                  {{ statusLabel(tarefa.status) }}
                 </span>
               </div>
 
-              <h3 class="line-clamp-2 font-semibold text-foreground">{{ tarefa.titulo }}</h3>
+              <h3 class="line-clamp-2 font-semibold text-foreground">{{ tarefa.descricao || `Tarefa #${tarefa.id}` }}</h3>
 
               <div class="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
                 <CalendarDays class="h-4 w-4 text-green-600" />
-                <span>{{ tarefa.data }}</span>
+                <span>{{ tarefa.dataLimite }}</span>
               </div>
 
               <p class="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
@@ -211,6 +220,10 @@ onMounted(async () => {
                 Clique para acompanhar
               </p>
             </RouterLink>
+
+            <p v-if="tarefas.length === 0" class="text-sm text-muted-foreground">
+              Nenhuma tarefa cadastrada ainda.
+            </p>
           </div>
         </section>
 
