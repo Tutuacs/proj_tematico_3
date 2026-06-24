@@ -1,17 +1,18 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
-import { CalendarDays, CheckCircle2, ClipboardList, Leaf, ListTodo, Save, Sprout, User2, X } from 'lucide-vue-next'
+import { CalendarDays, ClipboardList, Leaf, ListTodo, Save, Sprout, User2, X } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { getHortas, getPlantiosByHorta } from '@/services/Horta/horta.service'
 import { getMembrosByHorta, getMembrosByPerfil } from '@/services/Membro/membro.service'
-import { getStoredTarefas, saveStoredTarefa, updateStoredTarefa } from '@/services/Tarefa/tarefaStorage'
+import { createTarefa, getTarefaById, updateTarefa } from '@/services/Tarefa/tarefa.service'
+import { TIPO_OPTIONS } from '@/services/Tarefa/tarefaLabels'
 import { useAuthStore } from '@/stores/auth'
 import type { ApiResponse } from '@/types/api'
-import type { CreateTarefaPayload, TaskPriority } from '@/types/tarefa'
+import type { CreateTarefaPayload, Task, TaskTipo } from '@/types/tarefa'
 
 const router = useRouter()
 const route = useRoute()
@@ -19,6 +20,7 @@ const authStore = useAuthStore()
 const isSubmitting = ref(false)
 const isLoadingHortas = ref(true)
 const isLoadingVinculos = ref(false)
+const isLoadingTask = ref(false)
 const loadError = ref<string | null>(null)
 
 type HortaOption = {
@@ -50,29 +52,23 @@ type MembroOption = {
 const hortas = ref<HortaOption[]>([])
 const plantios = ref<PlantioOption[]>([])
 const membros = ref<MembroOption[]>([])
-const tipos = ['Regar', 'Plantar', 'Colher', 'Limpar', 'Adubar', 'Inspecionar', 'Podar']
-const prioridades: TaskPriority[] = ['Baixa', 'Media', 'Alta']
 const editingTaskId = ref<number | null>(null)
 
 const form = reactive({
-  titulo: '',
+  tipo: '' as TaskTipo | '',
   descricao: '',
-  tipo: '',
   hortaId: '',
   plantioId: '',
   membroId: '',
-  prioridade: 'Media' as TaskPriority,
   dataLimite: '',
 })
 
 function resetForm() {
-  form.titulo = ''
-  form.descricao = ''
   form.tipo = ''
+  form.descricao = ''
   form.hortaId = ''
   form.plantioId = ''
   form.membroId = ''
-  form.prioridade = 'Media'
   form.dataLimite = ''
 }
 
@@ -119,7 +115,7 @@ async function loadHortas() {
   }
 }
 
-function loadTaskForEdit() {
+async function loadTaskForEdit() {
   const editId = Number(route.query.edit)
 
   if (!Number.isFinite(editId) || editId <= 0) {
@@ -127,23 +123,32 @@ function loadTaskForEdit() {
     return
   }
 
-  const task = getStoredTarefas().find((item) => item.id === editId)
+  try {
+    isLoadingTask.value = true
+    const response = await getTarefaById(editId)
+    const task = extractData<Task>(response)
 
-  if (!task) {
+    if (!task) {
+      editingTaskId.value = null
+      loadError.value = 'Tarefa nao encontrada para edicao.'
+      return
+    }
+
+    editingTaskId.value = task.id
+    form.tipo = task.tipo
+    form.descricao = task.descricao ?? ''
+    form.hortaId = String(task.hortaId)
+    form.dataLimite = task.dataLimite
+
+    await loadVinculosByHorta(task.hortaId)
+    form.plantioId = task.plantioId ? String(task.plantioId) : ''
+    form.membroId = task.membroId ? String(task.membroId) : ''
+  } catch {
     editingTaskId.value = null
-    loadError.value = 'Tarefa nao encontrada para edicao.'
-    return
+    loadError.value = 'Nao foi possivel carregar a tarefa para edicao.'
+  } finally {
+    isLoadingTask.value = false
   }
-
-  editingTaskId.value = task.id
-  form.titulo = task.nome
-  form.descricao = task.descricao
-  form.tipo = task.tipo
-  form.hortaId = String(task.hortaId)
-  form.plantioId = task.plantioId ? String(task.plantioId) : ''
-  form.membroId = task.responsavelId ? String(task.responsavelId) : ''
-  form.prioridade = task.prioridade
-  form.dataLimite = task.data
 }
 
 async function loadVinculosByHorta(hortaId: number) {
@@ -169,7 +174,12 @@ async function loadVinculosByHorta(hortaId: number) {
 
 watch(
   () => form.hortaId,
-  (hortaId) => {
+  (hortaId, previousHortaId) => {
+    // evita resetar plantio/membro ao carregar dados de uma tarefa em edicao
+    if (isLoadingTask.value && previousHortaId === '') {
+      return
+    }
+
     form.plantioId = ''
     form.membroId = ''
     plantios.value = []
@@ -181,57 +191,62 @@ watch(
   },
 )
 
-function onSubmit() {
+const plantioOptions = computed(() => {
+  const nomeContagem = new Map<string, number>()
+
+  plantios.value.forEach((plantio) => {
+    const nome = plantio.especie?.nome ?? `Plantio #${plantio.id}`
+    nomeContagem.set(nome, (nomeContagem.get(nome) ?? 0) + 1)
+  })
+
+  return plantios.value.map((plantio) => {
+    const nome = plantio.especie?.nome ?? `Plantio #${plantio.id}`
+    const isDuplicado = (nomeContagem.get(nome) ?? 0) > 1
+
+    return {
+      id: plantio.id,
+      label: isDuplicado ? `${nome} #${plantio.id}` : nome,
+    }
+  })
+})
+
+async function onSubmit() {
+  if (!form.tipo) {
+    return
+  }
+
   isSubmitting.value = true
 
-  const selectedHorta = hortas.value.find((horta) => horta.id === Number(form.hortaId))
-  const selectedPlantio = plantios.value.find((plantio) => plantio.id === Number(form.plantioId))
-  const selectedMembro = membros.value.find((membro) => membro.id === Number(form.membroId))
-
   const payload: CreateTarefaPayload = {
-    titulo: form.titulo,
-    descricao: form.descricao,
     tipo: form.tipo,
+    descricao: form.descricao || undefined,
     hortaId: Number(form.hortaId),
     plantioId: form.plantioId ? Number(form.plantioId) : undefined,
     membroId: form.membroId ? Number(form.membroId) : undefined,
-    prioridade: form.prioridade,
     dataLimite: form.dataLimite,
   }
 
-  window.setTimeout(() => {
-    console.info('Payload preparado para POST /Tarefa:', payload)
-    const taskData = {
-      nome: form.titulo,
-      descricao: form.descricao,
-      prioridade: form.prioridade,
-      data: form.dataLimite,
-      hortaId: Number(form.hortaId),
-      horta: selectedHorta?.nome ?? `Horta #${form.hortaId}`,
-      responsavelId: Number(form.membroId),
-      responsavel: selectedMembro?.profile?.name ?? selectedMembro?.profile?.email ?? `Membro #${form.membroId}`,
-      tipo: form.tipo,
-      plantioId: form.plantioId ? Number(form.plantioId) : undefined,
-      plantio: selectedPlantio?.especie?.nome ?? 'Sem plantio relacionado',
-    }
-
+  try {
     if (editingTaskId.value) {
-      updateStoredTarefa(editingTaskId.value, taskData)
+      await updateTarefa(editingTaskId.value, payload)
       toast.success('Tarefa atualizada com sucesso.')
     } else {
-      saveStoredTarefa(taskData)
+      await createTarefa(payload)
       toast.success('Tarefa cadastrada com sucesso.')
     }
 
     resetForm()
-    isSubmitting.value = false
     router.push('/tarefas')
-  }, 500)
+  } catch {
+    toast.error('Nao foi possivel salvar a tarefa.')
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
 onMounted(async () => {
   await loadHortas()
-  loadTaskForEdit()
+  await loadTaskForEdit()
 })
 </script>
 
@@ -269,16 +284,10 @@ onMounted(async () => {
 
         <div class="grid gap-4 md:grid-cols-2">
           <div class="space-y-2 md:col-span-2">
-            <Label for="titulo">Titulo da tarefa</Label>
-            <Input id="titulo" v-model="form.titulo" required placeholder="Ex.: Regar canteiro de alfaces" />
-          </div>
-
-          <div class="space-y-2 md:col-span-2">
             <Label for="descricao">Descricao</Label>
             <textarea
               id="descricao"
               v-model="form.descricao"
-              required
               rows="4"
               placeholder="Descreva brevemente a atividade"
               class="flex min-h-24 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none transition-[color,box-shadow] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
@@ -296,7 +305,7 @@ onMounted(async () => {
                 class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 pl-9 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
               >
                 <option value="" disabled>Selecione o tipo</option>
-                <option v-for="tipo in tipos" :key="tipo" :value="tipo">{{ tipo }}</option>
+                <option v-for="tipo in TIPO_OPTIONS" :key="tipo" :value="tipo">{{ tipo }}</option>
               </select>
             </div>
           </div>
@@ -333,8 +342,8 @@ onMounted(async () => {
                 <option value="">
                   {{ isLoadingVinculos ? 'Carregando plantios...' : 'Sem plantio relacionado' }}
                 </option>
-                <option v-for="plantio in plantios" :key="plantio.id" :value="plantio.id">
-                  {{ plantio.especie?.nome ?? `Plantio #${plantio.id}` }}
+                <option v-for="plantio in plantioOptions" :key="plantio.id" :value="plantio.id">
+                  {{ plantio.label }}
                 </option>
               </select>
             </div>
@@ -347,32 +356,17 @@ onMounted(async () => {
               <select
                 id="responsavel"
                 v-model="form.membroId"
-                required
                 :disabled="!form.hortaId || isLoadingVinculos"
                 class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 pl-9 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
               >
-                <option value="" disabled>
-                  {{ isLoadingVinculos ? 'Carregando membros...' : 'Selecione um responsavel' }}
+                <option value="">
+                  {{ isLoadingVinculos ? 'Carregando membros...' : 'Sem responsavel definido' }}
                 </option>
                 <option v-for="membro in membros" :key="membro.id" :value="membro.id">
                   {{ membro.profile?.name ?? membro.profile?.email ?? `Membro #${membro.id}` }}
                 </option>
               </select>
             </div>
-          </div>
-
-          <div class="space-y-2">
-            <Label for="prioridade">Prioridade</Label>
-            <select
-              id="prioridade"
-              v-model="form.prioridade"
-              required
-              class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-            >
-              <option v-for="prioridade in prioridades" :key="prioridade" :value="prioridade">
-                {{ prioridade }}
-              </option>
-            </select>
           </div>
 
           <div class="space-y-2 md:col-span-2">
@@ -391,8 +385,7 @@ onMounted(async () => {
           </Button>
 
           <Button type="submit" class="sm:w-fit" :disabled="isSubmitting">
-            <CheckCircle2 v-if="isSubmitting" class="h-4 w-4 animate-pulse" />
-            <Save v-else class="h-4 w-4" />
+            <Save class="h-4 w-4" />
             {{ isSubmitting ? 'Salvando...' : editingTaskId ? 'Atualizar tarefa' : 'Salvar tarefa' }}
           </Button>
         </div>

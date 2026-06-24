@@ -1,33 +1,60 @@
 import type { Component } from 'vue'
 
-export type TaskStatus = 'Pendente' | 'Em andamento' | 'Concluida'
-export type TaskPriority = 'Baixa' | 'Media' | 'Alta'
+export type TaskTipo = 'Regar' | 'Plantar' | 'Colher' | 'Limpar' | 'Adubar' | 'Inspecionar' | 'Podar'
+export type TaskStatus = 'Aberto' | 'EmAndamento' | 'Concluido' | 'Cancelado'
+
+export type HortaResumo = {
+  id: number
+  nome: string
+}
+
+export type PlantioResumo = {
+  id: number
+  especie?: {
+    nome?: string
+  } | null
+}
+
+export type MembroResumo = {
+  id: number
+  profile?: {
+    name?: string
+    email?: string
+  } | null
+}
 
 export type Task = {
   id: number
-  nome: string
-  descricao: string
-  status: TaskStatus
-  prioridade: TaskPriority
-  data: string
+  tipo: TaskTipo
+  descricao?: string | null
+  dataLimite: string
+  plantioId?: number | null
   hortaId: number
-  horta: string
-  responsavelId?: number
-  responsavel: string
-  tipo: string
-  plantioId?: number
-  plantio: string
-  observacoes: string[]
+  membroId?: number | null
+  completedAt?: string | null
+  status: TaskStatus
+  createdAt: string
+  horta?: HortaResumo | null
+  plantio?: PlantioResumo | null
+  membro?: MembroResumo | null
   icon: Component
 }
 
 export type CreateTarefaPayload = {
-  titulo: string
-  descricao: string
-  tipo: string
+  tipo: TaskTipo
+  descricao?: string
+  dataLimite: string
   hortaId: number
   plantioId?: number
   membroId?: number
-  prioridade: TaskPriority
-  dataLimite: string
+}
+
+export type UpdateTarefaPayload = {
+  tipo?: TaskTipo
+  descricao?: string
+  dataLimite?: string
+  plantioId?: number
+  membroId?: number
+  completedAt?: string
+  status?: TaskStatus
 }

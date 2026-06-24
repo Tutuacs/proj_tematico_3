@@ -1,17 +1,16 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
 import { CalendarDays, CheckCircle2, Edit, Eye, Trash2, User2, Sprout } from 'lucide-vue-next'
+import { RouterLink } from 'vue-router'
 import { Button } from '@/components/ui/button'
-
-type TaskStatus = 'Pendente' | 'Em andamento' | 'Concluida'
-type TaskPriority = 'Baixa' | 'Media' | 'Alta'
+import { statusClasses } from '@/services/Tarefa/tarefaLabels'
+import type { TaskStatus } from '@/types/tarefa'
 
 defineProps<{
   id: number
-  nome: string
   descricao: string
   status: TaskStatus
-  prioridade: TaskPriority
+  statusLabel: string
   data: string
   horta: string
   responsavel: string
@@ -23,26 +22,6 @@ defineEmits<{
   delete: [id: number]
   complete: [id: number]
 }>()
-
-function statusClasses(status: TaskStatus) {
-  const classes = {
-    Pendente: 'bg-amber-50 text-amber-700 border-amber-200',
-    'Em andamento': 'bg-blue-50 text-blue-700 border-blue-200',
-    Concluida: 'bg-green-50 text-green-700 border-green-200',
-  }
-
-  return classes[status]
-}
-
-function priorityClasses(prioridade: TaskPriority) {
-  const classes = {
-    Baixa: 'bg-gray-50 text-gray-700 border-gray-200',
-    Media: 'bg-lime-50 text-lime-700 border-lime-200',
-    Alta: 'bg-red-50 text-red-700 border-red-200',
-  }
-
-  return classes[prioridade]
-}
 </script>
 
 <template>
@@ -59,13 +38,12 @@ function priorityClasses(prioridade: TaskPriority) {
           class="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium"
           :class="statusClasses(status)"
         >
-          {{ status }}
+          {{ statusLabel }}
         </span>
       </div>
 
       <p class="mb-2 text-xs font-medium uppercase text-gray-400">{{ tipo }}</p>
-      <h2 class="line-clamp-2 text-lg font-semibold text-gray-900">{{ nome }}</h2>
-      <p class="mt-2 line-clamp-2 text-sm text-gray-500">{{ descricao }}</p>
+      <h2 class="line-clamp-2 text-lg font-semibold text-gray-900">{{ descricao || `Tarefa #${id}` }}</h2>
 
       <div class="mt-4 space-y-2 text-sm text-gray-600">
         <p class="flex items-center gap-2">
@@ -79,12 +57,6 @@ function priorityClasses(prioridade: TaskPriority) {
       </div>
 
       <div class="mt-4 flex flex-wrap gap-2 text-xs">
-        <span
-          class="inline-flex items-center rounded-full border px-2.5 py-1 font-medium"
-          :class="priorityClasses(prioridade)"
-        >
-          Prioridade {{ prioridade.toLowerCase() }}
-        </span>
         <span class="inline-flex items-center gap-1 rounded-full bg-gray-50 px-2.5 py-1 font-medium text-gray-700">
           <CalendarDays class="h-3.5 w-3.5" />
           {{ data }}
@@ -97,11 +69,11 @@ function priorityClasses(prioridade: TaskPriority) {
         variant="outline"
         size="sm"
         class="w-full border-green-200 text-green-700 transition-colors hover:bg-green-50 hover:text-green-800"
-        :disabled="status === 'Concluida'"
+        :disabled="status === 'Concluido'"
         @click="$emit('complete', id)"
       >
         <CheckCircle2 class="h-4 w-4" />
-        {{ status === 'Concluida' ? 'Concluida' : 'Concluir' }}
+        {{ status === 'Concluido' ? 'Concluida' : 'Concluir' }}
       </Button>
 
       <div class="grid grid-cols-3 gap-1 sm:flex">

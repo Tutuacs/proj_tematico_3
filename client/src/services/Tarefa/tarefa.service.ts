@@ -1,22 +1,22 @@
 import { api } from '@/services/api'
-import type { CreateTarefaPayload } from '@/types/tarefa'
+import type { CreateTarefaPayload, UpdateTarefaPayload } from '@/types/tarefa'
 
 export async function getTarefas() {
-  return api.get('/Tarefa')
+  return api.get('/Todo')
 }
 
 export async function getTarefaById(id: number) {
-  return api.get(`/Tarefa/${id}`)
+  return api.get(`/Todo/${id}`)
 }
 
 export async function createTarefa(data: CreateTarefaPayload) {
-  return api.post('/Tarefa', data)
+  return api.post('/Todo', data)
 }
 
-export async function updateTarefa(id: number, data: Partial<CreateTarefaPayload>) {
-  return api.put(`/Tarefa/${id}`, data)
+export async function updateTarefa(id: number, data: UpdateTarefaPayload) {
+  return api.put(`/Todo/${id}`, data)
 }
 
 export async function deleteTarefa(id: number) {
-  return api.delete(`/Tarefa/${id}`)
+  return api.delete(`/Todo/${id}`)
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { onMounted, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import {
   ArrowLeft,
@@ -13,48 +13,73 @@ import {
   User2,
 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
-import { completeStoredTarefa, deleteStoredTarefa, getStoredTarefas } from '@/services/Tarefa/tarefaStorage'
-import type { TaskPriority, TaskStatus } from '@/types/tarefa'
+import { deleteTarefa, getTarefaById, updateTarefa } from '@/services/Tarefa/tarefa.service'
+import { statusClasses, statusLabel } from '@/services/Tarefa/tarefaLabels'
+import type { ApiResponse } from '@/types/api'
+import type { Task } from '@/types/tarefa'
 
 const route = useRoute()
 const router = useRouter()
 
-const tarefaId = computed(() => Number(route.params.id))
-const tarefa = computed(() => getStoredTarefas().find((task) => task.id === tarefaId.value) ?? null)
+const tarefaId = Number(route.params.id)
+const tarefa = ref<Task | null>(null)
+const isLoading = ref(true)
+const loadError = ref<string | null>(null)
 
-function deleteTask() {
+function extractData<T>(response: ApiResponse<T> | { data?: ApiResponse<T> } | null | undefined): T | null {
+  if (!response) return null
+
+  if ('data' in response && response.data && typeof response.data === 'object' && 'data' in response.data) {
+    return response.data.data ?? null
+  }
+
+  return (response as ApiResponse<T>).data ?? null
+}
+
+async function loadTarefa() {
+  try {
+    isLoading.value = true
+    loadError.value = null
+
+    const response = await getTarefaById(tarefaId)
+    tarefa.value = extractData<Task>(response)
+  } catch {
+    loadError.value = 'Nao foi possivel carregar a tarefa.'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+async function deleteTask() {
   if (!tarefa.value || !confirm('Tem certeza que deseja excluir esta tarefa?')) {
     return
   }
 
-  deleteStoredTarefa(tarefa.value.id)
-  router.push('/tarefas')
+  try {
+    await deleteTarefa(tarefa.value.id)
+    router.push('/tarefas')
+  } catch {
+    loadError.value = 'Nao foi possivel excluir a tarefa.'
+  }
 }
 
-function completeTask() {
+async function completeTask() {
   if (!tarefa.value) {
     return
   }
 
-  completeStoredTarefa(tarefa.value.id)
-  router.push('/tarefas')
+  try {
+    await updateTarefa(tarefa.value.id, {
+      status: 'Concluido',
+      completedAt: new Date().toISOString().slice(0, 10),
+    })
+    router.push('/tarefas')
+  } catch {
+    loadError.value = 'Nao foi possivel concluir a tarefa.'
+  }
 }
 
-function statusClasses(status: TaskStatus) {
-  return {
-    Pendente: 'bg-amber-50 text-amber-700 border-amber-200',
-    'Em andamento': 'bg-blue-50 text-blue-700 border-blue-200',
-    Concluida: 'bg-green-50 text-green-700 border-green-200',
-  }[status]
-}
-
-function priorityClasses(prioridade: TaskPriority) {
-  return {
-    Baixa: 'bg-gray-50 text-gray-700 border-gray-200',
-    Media: 'bg-lime-50 text-lime-700 border-lime-200',
-    Alta: 'bg-red-50 text-red-700 border-red-200',
-  }[prioridade]
-}
+onMounted(loadTarefa)
 </script>
 
 <template>
@@ -67,7 +92,15 @@ function priorityClasses(prioridade: TaskPriority) {
         </RouterLink>
       </Button>
 
-      <section v-if="!tarefa" class="rounded-xl border border-dashed bg-white p-10 text-center shadow-sm">
+      <div v-if="loadError" class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+        {{ loadError }}
+      </div>
+
+      <section v-if="isLoading" class="rounded-xl border border-dashed bg-white p-10 text-center shadow-sm">
+        <p class="text-sm text-gray-600">Carregando tarefa...</p>
+      </section>
+
+      <section v-else-if="!tarefa" class="rounded-xl border border-dashed bg-white p-10 text-center shadow-sm">
         <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
           <ClipboardList class="h-6 w-6" />
         </div>
@@ -83,18 +116,12 @@ function priorityClasses(prioridade: TaskPriority) {
                 <ClipboardList class="h-4 w-4" />
                 {{ tarefa.tipo }}
               </span>
-              <h1 class="mt-4 text-3xl font-bold text-gray-900">{{ tarefa.nome }}</h1>
-              <p class="mt-2 text-muted-foreground">{{ tarefa.descricao }}</p>
+              <h1 class="mt-4 text-2xl font-bold text-gray-900">{{ tarefa.descricao || `Tarefa #${tarefa.id}` }}</h1>
             </div>
 
-            <div class="flex flex-wrap gap-2">
-              <span class="inline-flex items-center rounded-full border px-3 py-1 text-sm font-medium" :class="statusClasses(tarefa.status)">
-                {{ tarefa.status }}
-              </span>
-              <span class="inline-flex items-center rounded-full border px-3 py-1 text-sm font-medium" :class="priorityClasses(tarefa.prioridade)">
-                Prioridade {{ tarefa.prioridade.toLowerCase() }}
-              </span>
-            </div>
+            <span class="inline-flex items-center rounded-full border px-3 py-1 text-sm font-medium" :class="statusClasses(tarefa.status)">
+              {{ statusLabel(tarefa.status) }}
+            </span>
           </div>
         </section>
 
@@ -104,19 +131,23 @@ function priorityClasses(prioridade: TaskPriority) {
             <div class="mt-4 space-y-3 text-sm text-gray-700">
               <p class="flex items-center gap-2">
                 <Sprout class="h-4 w-4 text-green-600" />
-                {{ tarefa.horta }}
+                {{ tarefa.horta?.nome ?? `Horta #${tarefa.hortaId}` }}
               </p>
               <p class="flex items-center gap-2">
                 <Leaf class="h-4 w-4 text-lime-600" />
-                {{ tarefa.plantio }}
+                {{ tarefa.plantio?.especie?.nome ?? 'Sem plantio relacionado' }}
               </p>
               <p class="flex items-center gap-2">
                 <User2 class="h-4 w-4 text-blue-600" />
-                {{ tarefa.responsavel }}
+                {{ tarefa.membro?.profile?.name ?? tarefa.membro?.profile?.email ?? 'Sem responsavel' }}
               </p>
               <p class="flex items-center gap-2">
                 <CalendarDays class="h-4 w-4 text-amber-600" />
-                Data limite: {{ tarefa.data }}
+                Data limite: {{ tarefa.dataLimite }}
+              </p>
+              <p v-if="tarefa.completedAt" class="flex items-center gap-2">
+                <CheckCircle2 class="h-4 w-4 text-green-600" />
+                Concluida em: {{ tarefa.completedAt }}
               </p>
             </div>
           </article>
@@ -127,11 +158,11 @@ function priorityClasses(prioridade: TaskPriority) {
               <Button
                 variant="outline"
                 class="justify-start border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800"
-                :disabled="tarefa.status === 'Concluida'"
+                :disabled="tarefa.status === 'Concluido'"
                 @click="completeTask"
               >
                 <CheckCircle2 class="h-4 w-4" />
-                {{ tarefa.status === 'Concluida' ? 'Tarefa concluida' : 'Concluir tarefa' }}
+                {{ tarefa.status === 'Concluido' ? 'Tarefa concluida' : 'Concluir tarefa' }}
               </Button>
               <Button as-child variant="outline" class="justify-start">
                 <RouterLink :to="`/tarefas/nova?edit=${tarefa.id}`">
@@ -149,19 +180,6 @@ function priorityClasses(prioridade: TaskPriority) {
               </Button>
             </div>
           </article>
-        </section>
-
-        <section class="rounded-xl border bg-white p-5 shadow-sm">
-          <h2 class="text-base font-semibold text-gray-900">Observacoes</h2>
-          <ul class="mt-4 space-y-3">
-            <li
-              v-for="observacao in tarefa.observacoes"
-              :key="observacao"
-              class="rounded-lg border bg-gray-50 px-4 py-3 text-sm text-gray-700"
-            >
-              {{ observacao }}
-            </li>
-          </ul>
         </section>
       </template>
     </div>
