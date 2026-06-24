@@ -1,87 +1,70 @@
-// using api.Model.Dtos.Todo;
-// using api.Model.Entities;
-// using Microsoft.EntityFrameworkCore;
-// using Microsoft.VisualBasic;
+using api.Model.Dtos.Todo;
+using api.Model.Entities;
+using Microsoft.EntityFrameworkCore;
 
-// namespace api.Data.Repository.Todo;
+namespace api.Data.Repository.Todo;
 
-// public class TodoRepository(ApplicationDbContext db) : ITodoRepository
-// {
-//     private readonly ApplicationDbContext _db = db;
+public class TodoRepository(ApplicationDbContext db) : ITodoRepository
+{
+    private readonly ApplicationDbContext _db = db;
 
-//     public async Task<int> CreateAsync(CreateTodoDto todo)
-//     {
-//         _db.Todo.Add(new TodoDb(todo.Description));
-//         var affectedRows = await _db.SaveChangesAsync();
-//         return affectedRows;
-//     }
+    public async Task<TodoDb> CreateAsync(CreateTodoDto dto)
+    {
+        var todo = new TodoDb(dto.Tipo, dto.DataLimite, dto.HortaId)
+        {
+            Descricao = dto.Descricao,
+            PlantioId = dto.PlantioId,
+            MembroId = dto.MembroId
+        };
 
-//     public async Task<List<TodoDb>> GetAllAsync(string? type, string? value)
-//     {
-//         if (string.IsNullOrEmpty(type) || string.IsNullOrEmpty(value))
-//         {
-//             return await _db.Todo.ToListAsync();
-//         }
+        _db.Todos.Add(todo);
+        await _db.SaveChangesAsync();
+        return todo;
+    }
 
-//         if (Strings.Equals(type.ToLower(), "id"))
-//         {
-//             var todo = await _db.Todo.FindAsync(value);
-//             return todo != null ? [todo] : [];
-//         }
+    public async Task<TodoDb?> GetByIdAsync(int id)
+    {
+        return await _db.Todos
+            .Include(t => t.Horta)
+            .Include(t => t.Plantio).ThenInclude(p => p!.Especie)
+            .Include(t => t.Membro).ThenInclude(m => m!.Profile)
+            .FirstOrDefaultAsync(t => t.Id == id);
+    }
 
-//         if (Strings.Equals(type.ToLower(), "description"))
-//         {
-//             var todos = await _db.Todo
-//                 .Where(t => EF.Functions.Like(t.Description, $"%{value}%"))
-//                 .ToListAsync();
-//             return todos;
-//         }
+    public async Task<List<TodoDb>> GetAllAsync()
+    {
+        return await _db.Todos
+            .Include(t => t.Horta)
+            .Include(t => t.Plantio).ThenInclude(p => p!.Especie)
+            .Include(t => t.Membro).ThenInclude(m => m!.Profile)
+            .OrderBy(t => t.DataLimite)
+            .ToListAsync();
+    }
 
-//         return await _db.Todo.ToListAsync();
-//     }
+    public async Task<TodoDb?> UpdateAsync(int id, UpdateTodoDto dto)
+    {
+        var todo = await _db.Todos.FindAsync(id);
+        if (todo == null) return null;
 
-//     public async Task<TodoDb?> GetByIdAsync(Guid id)
-//     {
-//         return await _db.Todo.FindAsync(Convert.ToString(id));
-//     }
+        if (dto.Tipo.HasValue) todo.Tipo = dto.Tipo.Value;
+        if (dto.Descricao != null) todo.Descricao = dto.Descricao;
+        if (dto.DataLimite.HasValue) todo.DataLimite = dto.DataLimite.Value;
+        if (dto.PlantioId.HasValue) todo.PlantioId = dto.PlantioId.Value;
+        if (dto.MembroId.HasValue) todo.MembroId = dto.MembroId.Value;
+        if (dto.CompletedAt.HasValue) todo.CompletedAt = dto.CompletedAt.Value;
+        if (dto.Status.HasValue) todo.Status = dto.Status.Value;
 
-//     public async Task<int> UpdateAsync(Guid id, UpdateTodoDto todo)
-//     {
-//         var UpdatedRows = -1;
-//         var exists = await _db.Todo.FindAsync(Convert.ToString(id));
-//         if (exists != null)
-//         {
-//             var savedDate = exists.Completed;
-//             var savedDescription = exists.Description;
-//             exists.Description = !string.IsNullOrEmpty(todo.Description) ? todo.Description : exists.Description;
-//             if (todo.Completed.HasValue)
-//             {
-//                 exists.Completed = todo.Completed.Value 
-//                     ? DateOnly.FromDateTime(DateTime.Now) 
-//                     : null;
-//             }
-//             UpdatedRows = await _db.SaveChangesAsync();
+        await _db.SaveChangesAsync();
+        return todo;
+    }
 
-//             // Quando não há mudanças, SaveChangesAsync retorna 0
-//             if (savedDate == exists.Completed && savedDescription == exists.Description)
-//             {
-//                 UpdatedRows = 1;
-//             }
-//         }
+    public async Task<bool> DeleteAsync(int id)
+    {
+        var todo = await _db.Todos.FindAsync(id);
+        if (todo == null) return false;
 
-//         return UpdatedRows;
-//     }
-    
-//     public async Task<int> DeleteAsync(Guid id)
-//     {
-//         var DeletedRows = -1;
-//         var todo = await _db.Todo.FindAsync(Convert.ToString(id));
-//         if (todo != null)
-//         {
-//             _db.Todo.Remove(todo);
-//             DeletedRows = await _db.SaveChangesAsync();
-//         }
-
-//         return DeletedRows;
-//     }
-// }
+        _db.Todos.Remove(todo);
+        await _db.SaveChangesAsync();
+        return true;
+    }
+}

@@ -1,13 +1,13 @@
-// using api.Model.Dtos.Todo;
-// using api.Model.Entities;
+using api.Model.Dtos.Todo;
+using api.Model.Entities;
 
-// namespace api.Data.Repository.Todo;
+namespace api.Data.Repository.Todo;
 
-// public interface ITodoRepository
-// {
-//     Task<int> CreateAsync(CreateTodoDto todo);
-//     Task<List<TodoDb>> GetAllAsync(string? type, string? value);
-//     Task<TodoDb?> GetByIdAsync(Guid id);
-//     Task<int> UpdateAsync(Guid id, UpdateTodoDto todo);
-//     Task<int> DeleteAsync(Guid id);
-// }
+public interface ITodoRepository
+{
+    Task<TodoDb> CreateAsync(CreateTodoDto dto);
+    Task<TodoDb?> GetByIdAsync(int id);
+    Task<List<TodoDb>> GetAllAsync();
+    Task<TodoDb?> UpdateAsync(int id, UpdateTodoDto dto);
+    Task<bool> DeleteAsync(int id);
+}

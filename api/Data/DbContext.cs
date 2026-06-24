@@ -10,6 +10,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<MembroDb> Membros { get; set; }
     public DbSet<EspecieDb> Especies { get; set; }
     public DbSet<PlantioDb> Plantios { get; set; }
+    public DbSet<TodoDb> Todos { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -60,6 +61,26 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .WithMany()
                 .HasForeignKey(p => p.HortaId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<TodoDb>(entity =>
+        {
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(CURRENT_DATE)");
+
+            entity.HasOne(t => t.Horta)
+                .WithMany()
+                .HasForeignKey(t => t.HortaId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(t => t.Plantio)
+                .WithMany()
+                .HasForeignKey(t => t.PlantioId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(t => t.Membro)
+                .WithMany()
+                .HasForeignKey(t => t.MembroId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

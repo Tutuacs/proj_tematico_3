@@ -4,6 +4,7 @@ using api.Data.Repository.Especie;
 using api.Data.Repository.Horta;
 using api.Data.Repository.Membro;
 using api.Data.Repository.Plantio;
+using api.Data.Repository.Todo;
 using api.Helpers;
 using api.Middleware;
 using api.Service.Auth;
@@ -11,12 +12,14 @@ using api.Service.Especie;
 using api.Service.Horta;
 using api.Service.Membro;
 using api.Service.Plantio;
+using api.Service.Todo;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
@@ -24,7 +27,12 @@ var builder = WebApplication.CreateSlimBuilder(args);
 builder.Services.AddControllers(options =>
 {
     options.UseGeneralRoutePrefix("api");
-}); 
+})
+.AddJsonOptions(options =>
+{
+    // Permite que enums sejam serializados/desserializados como string (ex: "Regar" em vez de 0)
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
 
 // Configurar Swagger com autenticação JWT
 builder.Services.AddSwaggerGen(c =>
@@ -128,6 +136,8 @@ builder.Services.AddScoped<IMembroService, MembroService>();
 builder.Services.AddScoped<IMembroRepository, MembroRepository>();
 builder.Services.AddScoped<IPlantioService, PlantioService>();
 builder.Services.AddScoped<IPlantioRepository, PlantioRepository>();
+builder.Services.AddScoped<ITodoService, TodoService>();
+builder.Services.AddScoped<ITodoRepository, TodoRepository>();
 builder.Services.AddScoped<JwtHelper>();
 
 var app = builder.Build();
