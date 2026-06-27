@@ -1,0 +1,25 @@
+Telas a criar:
+
+/horta (deve listar os membros, informações de plantios próximos da colheita e uma parte apra tarefas abertas)
+/horta/:id/membros(Apenas membros da Horta selecionada) na Sidebar (Opção de adicionar membro)
+/horta/:id/plantio(Mesmo caso dos membros)
+/horta/:id/tarefas (Não vamos implementar agora mas ficaria aqui)
+Adicionar tela para Editar/Criar
+
+/plantas
+Criar tela para Editar ou alterar a de criação para Editar também...
+
+/configuracoes (Listagem de tudo no sistema?)
+/configuracoes/usuario (edita o usuario, ao realizar alteração de senha faz logout automático? pede confirmação?)
+
+/login (Alterar a tela de login para ter uma imagem de planta no local verde, a imagem pode ser meio transparente
+gradient da esquerda pra direita verde)
+/register (Tela não ta entrando?)
+
+Pendencias para alterar:
+
+Tela de listar tarefas/especifica, permitindo que qualquer um dê a tarefa como concluida..
+(mostrar a data no formato DD/MM/YYYY)
+(Deveria deixar apenas admin/usuario responsável), deve deixar atribuir a atividade a outro responsável("atribuir a mim")
+
+Tela membro, deixa editar qualquer membro, botar qualquer role, apenas admin pode mudar para admin, não deve deixar o admin alterar propria role.
