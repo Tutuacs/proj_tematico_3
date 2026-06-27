@@ -5,11 +5,14 @@ import { ListTodo, Plus, Search, TriangleAlert } from 'lucide-vue-next'
 import TaskCard from '@/components/TaskCard.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { getMembrosByPerfil } from '@/services/Membro/membro.service'
 import { deleteTarefa, getTarefas, updateTarefa } from '@/services/Tarefa/tarefa.service'
-import { statusLabel, STATUS_OPTIONS, tipoIcon } from '@/services/Tarefa/tarefaLabels'
+import { formatDateBr, statusLabel, STATUS_OPTIONS, tipoIcon } from '@/services/Tarefa/tarefaLabels'
+import { useAuthStore } from '@/stores/auth'
 import type { ApiResponse } from '@/types/api'
 import type { Task, TaskStatus } from '@/types/tarefa'
 
+const authStore = useAuthStore()
 const isLoading = ref(true)
 const loadError = ref<string | null>(null)
 
@@ -18,6 +21,9 @@ const selectedHorta = ref('Todas')
 const searchTerm = ref('')
 
 const tasks = ref<Task[]>([])
+
+// hortaId -> { membroId, isAdmin } do usuario logado, pra decidir quem pode concluir/excluir cada tarefa
+const minhasMembresias = ref<Record<number, { membroId: number; isAdmin: boolean }>>({})
 
 function extractData<T>(response: ApiResponse<T> | { data?: ApiResponse<T> } | null | undefined): T | null {
   if (!response) return null
@@ -43,6 +49,37 @@ async function loadTarefas() {
   } finally {
     isLoading.value = false
   }
+
+  try {
+    const perfilId = authStore.user?.id
+    if (perfilId) {
+      const response = await getMembrosByPerfil(perfilId)
+      const memberships = extractData<any[]>(response) ?? []
+      const map: Record<number, { membroId: number; isAdmin: boolean }> = {}
+
+      memberships.forEach((m) => {
+        map[m.hortaId] = {
+          membroId: m.id,
+          isAdmin: m.role === 'Admin' || m.role === 0,
+        }
+      })
+
+      minhasMembresias.value = map
+    }
+  } catch {
+    minhasMembresias.value = {}
+  }
+}
+
+function canCompleteTask(task: Task) {
+  const membresia = minhasMembresias.value[task.hortaId]
+  if (!membresia) return false
+  return membresia.isAdmin || task.membroId === membresia.membroId
+}
+
+function canDeleteTask(task: Task) {
+  const membresia = minhasMembresias.value[task.hortaId]
+  return !!membresia?.isAdmin
 }
 
 const totalTarefas = computed(() => tasks.value.length)
@@ -76,6 +113,11 @@ const visibleTasks = computed(() => {
 })
 
 async function deleteTask(id: number) {
+  const task = tasks.value.find((t) => t.id === id)
+  if (!task || !canDeleteTask(task)) {
+    return
+  }
+
   if (!confirm('Tem certeza que deseja excluir esta tarefa?')) {
     return
   }
@@ -89,6 +131,11 @@ async function deleteTask(id: number) {
 }
 
 async function completeTask(id: number) {
+  const task = tasks.value.find((t) => t.id === id)
+  if (!task || !canCompleteTask(task)) {
+    return
+  }
+
   try {
     await updateTarefa(id, {
       status: 'Concluido',
@@ -222,11 +269,13 @@ onMounted(loadTarefas)
               :descricao="task.descricao ?? ''"
               :status="task.status"
               :status-label="statusLabel(task.status)"
-              :data="task.dataLimite"
+              :data="formatDateBr(task.dataLimite)"
               :horta="task.horta?.nome ?? `Horta #${task.hortaId}`"
               :responsavel="task.membro?.profile?.name ?? task.membro?.profile?.email ?? 'Sem responsavel'"
               :tipo="task.tipo"
               :icon="task.icon"
+              :can-complete="canCompleteTask(task)"
+              :can-delete="canDeleteTask(task)"
               @complete="completeTask"
               @delete="deleteTask"
             />

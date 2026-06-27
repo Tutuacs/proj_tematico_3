@@ -79,9 +79,9 @@ public class HortaService(IHortaRepository hortaRepository, IMembroRepository me
         };
     }
 
-    public async Task<ServiceResponse<List<HortaResumoDto>>> GetAllAsync()
+    public async Task<ServiceResponse<List<HortaResumoDto>>> GetAllAsync(string perfilId)
     {
-        var hortas = await _hortaRepository.GetAllAsync();
+        var hortas = await _hortaRepository.GetAllAsync(perfilId);
         
         return new ServiceResponse<List<HortaResumoDto>>
         {

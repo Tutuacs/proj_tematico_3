@@ -15,6 +15,7 @@ import LoginView from '@/views/LoginView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import MembroEditView from '@/views/Membros/MembroEditView.vue'
 import PlantioEditView from '@/views/Plantios/PlantioEditView.vue'
+import AdicionaMembroView from '@/views/Membros/AdicionaMembroView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -99,6 +100,11 @@ const router = createRouter({
       name: 'register',
       component: RegisterView,
     },
+    {
+      path: '/horta/:id/membros/adicionar',
+      name: 'horta-adicionar-membro',
+      component: () => AdicionaMembroView
+    }
   ],
 })
 

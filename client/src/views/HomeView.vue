@@ -66,6 +66,20 @@ function extractData<T>(response: any): T | null {
   return response.data ?? null
 }
 
+function formatDate(date: string) {
+  if (!date) return "-";
+
+  const d = new Date(date);
+
+  // Evita problemas de fuso horário para datas no formato YYYY-MM-DD
+  if (isNaN(d.getTime())) {
+    const [year, month, day] = date.split("-");
+    return `${day}/${month}/${year}`;
+  }
+
+  return d.toLocaleDateString("pt-BR");
+}
+
 onMounted(async () => {
   try {
     const res = await getHortas();
@@ -212,7 +226,7 @@ onMounted(async () => {
 
               <div class="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
                 <CalendarDays class="h-4 w-4 text-green-600" />
-                <span>{{ tarefa.dataLimite }}</span>
+                <span>{{ formatDate(tarefa.dataLimite) }}</span>
               </div>
 
               <p class="mt-3 flex items-center gap-2 text-xs text-muted-foreground">

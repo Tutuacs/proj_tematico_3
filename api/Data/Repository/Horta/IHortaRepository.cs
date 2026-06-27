@@ -7,7 +7,7 @@ public interface IHortaRepository
 {
     Task<HortaDb> CreateAsync(CreateHortaDto dto);
     Task<HortaResumoDto?> GetByIdAsync(int id);
-    Task<List<HortaResumoDto>> GetAllAsync();
+    Task<List<HortaResumoDto>> GetAllAsync(string perfilId);
     Task<HortaDb?> UpdateAsync(int id, UpdateHortaDto dto);
     Task<bool> DeleteAsync(int id);
 }

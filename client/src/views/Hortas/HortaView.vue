@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
-import { ArrowRight, Leaf, MapPin, Sprout, Users } from 'lucide-vue-next'
+import { ArrowRight, Leaf, MapPin, Plus, Sprout, Users } from 'lucide-vue-next'
+import { Button } from '@/components/ui/button'
 import { getHortas } from '@/services/Horta/horta.service'
+import { getMembrosByPerfil } from '@/services/Membro/membro.service'
+import { useAuthStore } from '@/stores/auth'
 
 type HortaResumo = {
   id: number
@@ -13,9 +16,12 @@ type HortaResumo = {
   countPlantios: number
 }
 
+const authStore = useAuthStore()
+
 const hortas = ref<HortaResumo[]>([])
 const isLoading = ref(true)
 const errorMessage = ref<string | null>(null)
+const isAdminEmAlgumaHorta = ref(false)
 
 const totalHortas = computed(() => hortas.value.length)
 const totalMembros = computed(() =>
@@ -41,6 +47,17 @@ onMounted(async () => {
   } finally {
     isLoading.value = false
   }
+
+  try {
+    const perfilId = authStore.user?.id
+    if (perfilId) {
+      const res = await getMembrosByPerfil(perfilId)
+      const memberships = res?.data?.data ?? res?.data ?? []
+      isAdminEmAlgumaHorta.value = memberships.some((m: any) => m.role === 'Admin' || m.role === 0)
+    }
+  } catch {
+    isAdminEmAlgumaHorta.value = false
+  }
 })
 </script>
 
@@ -58,6 +75,13 @@ onMounted(async () => {
             <p class="mt-2 text-muted-foreground">
               Organize suas areas de cultivo, acompanhe membros vinculados e acesse os plantios de cada horta.
             </p>
+
+            <Button v-if="isAdminEmAlgumaHorta" as-child class="mt-4 w-fit">
+              <RouterLink to="/horta/nova">
+                <Plus class="h-4 w-4" />
+                Nova horta
+              </RouterLink>
+            </Button>
           </div>
 
           <div class="grid gap-3 sm:grid-cols-3 lg:w-[520px]">

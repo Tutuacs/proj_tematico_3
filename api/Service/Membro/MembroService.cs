@@ -81,6 +81,18 @@ public class MembroService(IMembroRepository membroRepository, ILogger<MembroSer
         };
     }
 
+    public async Task<ServiceResponse<List<api.Model.Entities.ProfileDb>>> GetAddMembersByHortaIdAsync(int hortaId)
+    {
+        var perfisDisponiveis = await _membroRepository.GetAvailableProfilesForHortaAsync(hortaId);
+        
+        return new ServiceResponse<List<api.Model.Entities.ProfileDb>>
+        {
+            Data = perfisDisponiveis,
+            Message = "Usuários disponíveis listados com sucesso",
+            StatusCode = System.Net.HttpStatusCode.OK
+        };
+    }
+
     public async Task<ServiceResponse<List<MembroDb>>> GetByPerfilIdAsync(string perfilId)
     {
         var membros = await _membroRepository.GetByPerfilIdAsync(perfilId);

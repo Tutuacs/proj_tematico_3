@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, RouterLink } from 'vue-router'
+import { UserPlus } from 'lucide-vue-next'
 import HortaCard from '@/components/HortaCard.vue'
+import { Button } from '@/components/ui/button'
 import { getHortaById, getPlantiosByHorta } from '@/services/Horta/horta.service'
 import { getMembrosByHorta } from '@/services/Membro/membro.service'
-import { RouterLink } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 type HortaResumo = {
   id: number
@@ -38,6 +40,7 @@ type MembroItem = {
 }
 
 const route = useRoute()
+const authStore = useAuthStore()
 
 const hortaId = computed(() => Number(route.params.id))
 const horta = ref<HortaResumo | null>(null)
@@ -45,6 +48,13 @@ const plantios = ref<PlantioItem[]>([])
 const membros = ref<MembroItem[]>([])
 const isLoading = ref(true)
 const errorMessage = ref<string | null>(null)
+
+// Usuario logado e Admin desta horta especifica (nao de outra)
+const isAdminDestaHorta = computed(() => {
+  const perfilId = authStore.user?.id
+  if (!perfilId) return false
+  return membros.value.some((m) => m.perfilId === perfilId && (m.role === 'Admin' || m.role === 0 as any))
+})
 
 const membrosSorted = computed(() => {
   return [...membros.value].sort((a, b) => {
@@ -117,13 +127,17 @@ watch(() => route.params.id, loadHortaData)
         <p class="text-red-800">{{ errorMessage }}</p>
       </div>
 
-      <div v-else-if="plantios.length === 0" class="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-        Nenhum plantio encontrado para esta horta.
-      </div>
-
       <div v-else>
         <section class="mb-8">
-          <h2 class="text-lg font-semibold mb-4">Membros</h2>
+          <div class="mb-4 flex items-center justify-between gap-3">
+            <h2 class="text-lg font-semibold">Membros</h2>
+            <Button v-if="isAdminDestaHorta" as-child size="sm">
+              <RouterLink :to="`/horta/${hortaId}/membros/adicionar`">
+                <UserPlus class="h-4 w-4" />
+                Adicionar membro
+              </RouterLink>
+            </Button>
+          </div>
           <div v-if="membros.length === 0" class="text-muted-foreground py-4">Nenhum membro encontrado.</div>
           <div v-else class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <RouterLink v-for="(mem, idx) in membrosSorted" :key="mem.id ?? idx" :to="`/membro/${mem.id ?? idx}`" class="block">
@@ -147,7 +161,11 @@ watch(() => route.params.id, loadHortaData)
           </div>
         </section>
 
-        <section>
+        <section v-if="plantios.length === 0" class="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
+          Nenhum plantio encontrado para esta horta.
+        </section>
+
+        <section v-else>
           <h2 class="text-lg font-semibold mb-4">Plantios</h2>
           <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <RouterLink v-for="(item, index) in plantios" :key="item.id || index" :to="`/plantio/${item.id}`" class="block">

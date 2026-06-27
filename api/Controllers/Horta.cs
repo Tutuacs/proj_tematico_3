@@ -48,7 +48,17 @@ public class HortaController(IHortaService hortaService) : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var result = await _hortaService.GetAllAsync();
+        var currentUser = JwtHelper.GetCurrentUser(User);
+        if (currentUser == null)
+        {
+            return Unauthorized(new ApiResponse<object>
+            {
+                Data = null,
+                Message = "Usuário não autenticado"
+            });
+        }
+
+        var result = await _hortaService.GetAllAsync(currentUser.Id);
         return StatusCode((int)result.StatusCode, new ApiResponse<object>
         {
             Data = result.Data,

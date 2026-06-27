@@ -16,6 +16,8 @@ defineProps<{
   responsavel: string
   tipo: string
   icon: Component
+  canComplete?: boolean
+  canDelete?: boolean
 }>()
 
 defineEmits<{
@@ -66,6 +68,7 @@ defineEmits<{
 
     <div class="mt-5 grid gap-2 border-t pt-4 sm:grid-cols-[1fr_auto]">
       <Button
+        v-if="canComplete"
         variant="outline"
         size="sm"
         class="w-full border-green-200 text-green-700 transition-colors hover:bg-green-50 hover:text-green-800"
@@ -75,6 +78,7 @@ defineEmits<{
         <CheckCircle2 class="h-4 w-4" />
         {{ status === 'Concluido' ? 'Concluida' : 'Concluir' }}
       </Button>
+      <span v-else class="flex items-center text-xs text-gray-400">Sem permissao para concluir</span>
 
       <div class="grid grid-cols-3 gap-1 sm:flex">
         <Button as-child variant="outline" size="sm" class="px-2" title="Ver detalhes">
@@ -88,6 +92,7 @@ defineEmits<{
           </RouterLink>
         </Button>
         <Button
+          v-if="canDelete"
           variant="outline"
           size="sm"
           class="px-2 text-red-600 hover:bg-red-50 hover:text-red-700"

@@ -54,14 +54,70 @@ const plantios = ref<PlantioOption[]>([])
 const membros = ref<MembroOption[]>([])
 const editingTaskId = ref<number | null>(null)
 
+// Apenas admin da horta selecionada pode definir/alterar o responsavel pela tarefa
+const isAdminDaHortaSelecionada = computed(() => {
+  const perfilId = authStore.user?.id
+  if (!perfilId) return false
+  return membros.value.some((m) => m.perfilId === perfilId && (m.role === 'Admin' || m.role === 0 as any))
+})
+
+// Membro do usuario logado dentro da horta selecionada (pra poder se atribuir a propria tarefa)
+const meuMembro = computed(() => {
+  const perfilId = authStore.user?.id
+  if (!perfilId) return null
+  return membros.value.find((m) => m.perfilId === perfilId) ?? null
+})
+
+// So faz sentido "atribuir a mim" quando estamos editando uma tarefa existente e o usuario nao e admin
+const canAssignToSelf = computed(
+  () => !isAdminDaHortaSelecionada.value && !!meuMembro.value && form.membroId !== String(meuMembro.value.id),
+)
+
+function assignToSelf() {
+  if (!meuMembro.value) return
+  form.membroId = String(meuMembro.value.id)
+}
+
 const form = reactive({
   tipo: '' as TaskTipo | '',
   descricao: '',
   hortaId: '',
   plantioId: '',
   membroId: '',
-  dataLimite: '',
+  dataLimite: '', // sempre 'YYYY-MM-DD' (formato que a API espera)
 })
+
+// Campo de texto que o usuario digita, sempre como DD/MM/AAAA
+const dataLimiteDisplay = ref('')
+
+function maskDateInput(rawValue: string) {
+  const digits = rawValue.replace(/\D/g, '').slice(0, 8)
+
+  if (digits.length <= 2) return digits
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`
+}
+
+function onDataLimiteInput(event: Event) {
+  const target = event.target as HTMLInputElement
+  const masked = maskDateInput(target.value)
+  dataLimiteDisplay.value = masked
+
+  const [day, month, year] = masked.split('/')
+
+  if (day?.length === 2 && month?.length === 2 && year?.length === 4) {
+    form.dataLimite = `${year}-${month}-${day}`
+  } else {
+    form.dataLimite = ''
+  }
+}
+
+function isoToDisplay(iso: string) {
+  if (!iso) return ''
+  const [year, month, day] = iso.slice(0, 10).split('-')
+  if (!year || !month || !day) return ''
+  return `${day}/${month}/${year}`
+}
 
 function resetForm() {
   form.tipo = ''
@@ -70,6 +126,7 @@ function resetForm() {
   form.plantioId = ''
   form.membroId = ''
   form.dataLimite = ''
+  dataLimiteDisplay.value = ''
 }
 
 function extractData<T>(response: ApiResponse<T> | { data?: ApiResponse<T> } | null | undefined): T | null {
@@ -139,6 +196,7 @@ async function loadTaskForEdit() {
     form.descricao = task.descricao ?? ''
     form.hortaId = String(task.hortaId)
     form.dataLimite = task.dataLimite
+    dataLimiteDisplay.value = isoToDisplay(task.dataLimite)
 
     await loadVinculosByHorta(task.hortaId)
     form.plantioId = task.plantioId ? String(task.plantioId) : ''
@@ -212,6 +270,11 @@ const plantioOptions = computed(() => {
 
 async function onSubmit() {
   if (!form.tipo) {
+    return
+  }
+
+  if (!form.dataLimite) {
+    toast.error('Informe uma data limite valida no formato DD/MM/AAAA.')
     return
   }
 
@@ -301,6 +364,7 @@ onMounted(async () => {
               <select
                 id="tipo"
                 v-model="form.tipo"
+                :disabled="!form.hortaId || isLoadingVinculos || !isAdminDaHortaSelecionada"
                 required
                 class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 pl-9 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
               >
@@ -318,7 +382,7 @@ onMounted(async () => {
                 id="horta"
                 v-model="form.hortaId"
                 required
-                :disabled="isLoadingHortas"
+                :disabled="isLoadingHortas || !form.hortaId || isLoadingVinculos || !isAdminDaHortaSelecionada"
                 class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 pl-9 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
               >
                 <option value="" disabled>
@@ -336,7 +400,7 @@ onMounted(async () => {
               <select
                 id="plantio"
                 v-model="form.plantioId"
-                :disabled="!form.hortaId || isLoadingVinculos"
+                :disabled="!form.hortaId || isLoadingVinculos || !isAdminDaHortaSelecionada"
                 class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 pl-9 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
               >
                 <option value="">
@@ -356,7 +420,7 @@ onMounted(async () => {
               <select
                 id="responsavel"
                 v-model="form.membroId"
-                :disabled="!form.hortaId || isLoadingVinculos"
+                :disabled="!form.hortaId || isLoadingVinculos || !isAdminDaHortaSelecionada"
                 class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 pl-9 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
               >
                 <option value="">
@@ -367,14 +431,42 @@ onMounted(async () => {
                 </option>
               </select>
             </div>
+            <p v-if="form.hortaId && !isLoadingVinculos && !isAdminDaHortaSelecionada" class="text-xs text-gray-500">
+              Apenas o administrador da horta pode definir o responsavel.
+            </p>
+            <Button
+              v-if="canAssignToSelf"
+              type="button"
+              variant="outline"
+              size="sm"
+              class="w-full justify-start"
+              @click="assignToSelf"
+            >
+              <User2 class="h-4 w-4" />
+              Atribuir a mim
+            </Button>
           </div>
 
           <div class="space-y-2 md:col-span-2">
             <Label for="dataLimite">Data limite</Label>
             <div class="relative">
               <CalendarDays class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <Input id="dataLimite" v-model="form.dataLimite" required type="date" class="pl-9" />
+              <Input
+                id="dataLimite"
+                :value="dataLimiteDisplay"
+                :disabled="!form.hortaId || isLoadingVinculos || !isAdminDaHortaSelecionada"
+                required
+                type="text"
+                inputmode="numeric"
+                placeholder="DD/MM/AAAA"
+                maxlength="10"
+                class="pl-9"
+                @input="onDataLimiteInput"
+              />
             </div>
+            <p v-if="dataLimiteDisplay && !form.dataLimite" class="text-xs text-amber-600">
+              Data incompleta, continue digitando no formato DD/MM/AAAA.
+            </p>
           </div>
         </div>
 

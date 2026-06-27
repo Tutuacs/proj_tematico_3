@@ -14,4 +14,5 @@ public interface IMembroRepository
     Task<bool> IsMemberOfHortaAsync(int hortaId, string perfilId);
     Task<bool> IsAdminInAnyHortaAsync(string perfilId);
     Task<MembroDb?> GetByHortaAndPerfilAsync(int hortaId, string perfilId);
+    Task<List<api.Model.Entities.ProfileDb>> GetAvailableProfilesForHortaAsync(int hortaId);
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import {
   ArrowLeft,
@@ -11,20 +11,39 @@ import {
   Sprout,
   Trash2,
   User2,
+  UserCheck,
 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
+import { getMembrosByHorta } from '@/services/Membro/membro.service'
 import { deleteTarefa, getTarefaById, updateTarefa } from '@/services/Tarefa/tarefa.service'
-import { statusClasses, statusLabel } from '@/services/Tarefa/tarefaLabels'
+import { formatDateBr, statusClasses, statusLabel } from '@/services/Tarefa/tarefaLabels'
+import { useAuthStore } from '@/stores/auth'
 import type { ApiResponse } from '@/types/api'
 import type { Task } from '@/types/tarefa'
 
+type MembroOption = {
+  id: number
+  hortaId: number
+  perfilId: string
+  role: number | string
+  profile?: {
+    name?: string
+    email?: string
+  } | null
+}
+
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 
 const tarefaId = Number(route.params.id)
 const tarefa = ref<Task | null>(null)
 const isLoading = ref(true)
 const loadError = ref<string | null>(null)
+
+const membros = ref<MembroOption[]>([])
+const selectedMembroId = ref('')
+const isAssigning = ref(false)
 
 function extractData<T>(response: ApiResponse<T> | { data?: ApiResponse<T> } | null | undefined): T | null {
   if (!response) return null
@@ -36,6 +55,32 @@ function extractData<T>(response: ApiResponse<T> | { data?: ApiResponse<T> } | n
   return (response as ApiResponse<T>).data ?? null
 }
 
+function isAdminRole(role: number | string) {
+  return role === 0 || role === 'Admin'
+}
+
+// Membro vinculado ao usuario logado dentro da horta desta tarefa
+const currentMembro = computed(() => {
+  const perfilId = authStore.user?.id
+  if (!perfilId) return null
+  return membros.value.find((m) => m.perfilId === perfilId) ?? null
+})
+
+const isAdmin = computed(() => !!currentMembro.value && isAdminRole(currentMembro.value.role))
+const isResponsavelAtual = computed(() => !!currentMembro.value && tarefa.value?.membroId === currentMembro.value.id)
+
+// Quem pode reatribuir a tarefa para outra pessoa: admin da horta ou quem esta responsavel agora
+const canReassign = computed(() => isAdmin.value || isResponsavelAtual.value)
+
+// Mostra "atribuir a mim" quando o usuario e membro da horta e a tarefa nao esta com ele
+const canAssignToSelf = computed(() => !!currentMembro.value && !isResponsavelAtual.value)
+
+// Apenas admin da horta ou o responsavel atual podem concluir a tarefa
+const canComplete = computed(() => isAdmin.value || isResponsavelAtual.value)
+
+// Apenas admin da horta pode excluir a tarefa
+const canDelete = computed(() => isAdmin.value)
+
 async function loadTarefa() {
   try {
     isLoading.value = true
@@ -43,6 +88,12 @@ async function loadTarefa() {
 
     const response = await getTarefaById(tarefaId)
     tarefa.value = extractData<Task>(response)
+
+    if (tarefa.value) {
+      const membrosResponse = await getMembrosByHorta(tarefa.value.hortaId)
+      membros.value = extractData<MembroOption[]>(membrosResponse) ?? []
+      selectedMembroId.value = tarefa.value.membroId ? String(tarefa.value.membroId) : ''
+    }
   } catch {
     loadError.value = 'Nao foi possivel carregar a tarefa.'
   } finally {
@@ -51,7 +102,11 @@ async function loadTarefa() {
 }
 
 async function deleteTask() {
-  if (!tarefa.value || !confirm('Tem certeza que deseja excluir esta tarefa?')) {
+  if (!tarefa.value || !canDelete.value) {
+    return
+  }
+
+  if (!confirm('Tem certeza que deseja excluir esta tarefa?')) {
     return
   }
 
@@ -64,7 +119,7 @@ async function deleteTask() {
 }
 
 async function completeTask() {
-  if (!tarefa.value) {
+  if (!tarefa.value || !canComplete.value) {
     return
   }
 
@@ -76,6 +131,42 @@ async function completeTask() {
     router.push('/tarefas')
   } catch {
     loadError.value = 'Nao foi possivel concluir a tarefa.'
+  }
+}
+
+async function assignToSelf() {
+  if (!tarefa.value || !currentMembro.value) {
+    return
+  }
+
+  try {
+    isAssigning.value = true
+    await updateTarefa(tarefa.value.id, { membroId: currentMembro.value.id })
+    tarefa.value = { ...tarefa.value, membroId: currentMembro.value.id, membro: { id: currentMembro.value.id, profile: currentMembro.value.profile } }
+    selectedMembroId.value = String(currentMembro.value.id)
+  } catch {
+    loadError.value = 'Nao foi possivel atribuir a tarefa a voce.'
+  } finally {
+    isAssigning.value = false
+  }
+}
+
+async function reassign() {
+  if (!tarefa.value || !selectedMembroId.value) {
+    return
+  }
+
+  const novoMembroId = Number(selectedMembroId.value)
+  const novoMembro = membros.value.find((m) => m.id === novoMembroId)
+
+  try {
+    isAssigning.value = true
+    await updateTarefa(tarefa.value.id, { membroId: novoMembroId })
+    tarefa.value = { ...tarefa.value, membroId: novoMembroId, membro: novoMembro ? { id: novoMembro.id, profile: novoMembro.profile } : tarefa.value.membro }
+  } catch {
+    loadError.value = 'Nao foi possivel atribuir a tarefa a esse responsavel.'
+  } finally {
+    isAssigning.value = false
   }
 }
 
@@ -143,11 +234,44 @@ onMounted(loadTarefa)
               </p>
               <p class="flex items-center gap-2">
                 <CalendarDays class="h-4 w-4 text-amber-600" />
-                Data limite: {{ tarefa.dataLimite }}
+                Data limite: {{ formatDateBr(tarefa.dataLimite) }}
               </p>
               <p v-if="tarefa.completedAt" class="flex items-center gap-2">
                 <CheckCircle2 class="h-4 w-4 text-green-600" />
-                Concluida em: {{ tarefa.completedAt }}
+                Concluida em: {{ formatDateBr(tarefa.completedAt) }}
+              </p>
+            </div>
+
+            <div class="mt-5 space-y-3 border-t pt-4">
+              <p class="text-xs font-medium text-gray-500">Responsavel pela tarefa</p>
+
+              <Button
+                v-if="canAssignToSelf"
+                variant="outline"
+                size="sm"
+                class="w-full justify-start"
+                :disabled="isAssigning"
+                @click="assignToSelf"
+              >
+                <UserCheck class="h-4 w-4" />
+                Atribuir a mim
+              </Button>
+
+              <div v-if="canReassign" class="flex gap-2">
+                <select
+                  v-model="selectedMembroId"
+                  class="h-9 w-full rounded-md border border-input bg-white px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                >
+                  <option value="">Sem responsavel</option>
+                  <option v-for="membro in membros" :key="membro.id" :value="membro.id">
+                    {{ membro.profile?.name ?? membro.profile?.email ?? `Membro #${membro.id}` }}
+                  </option>
+                </select>
+                <Button size="sm" :disabled="isAssigning" @click="reassign">Salvar</Button>
+              </div>
+
+              <p v-else class="text-xs text-gray-500">
+                Apenas o administrador da horta ou o responsavel atual podem reatribuir esta tarefa.
               </p>
             </div>
           </article>
@@ -156,6 +280,7 @@ onMounted(loadTarefa)
             <h2 class="text-base font-semibold text-gray-900">Acoes</h2>
             <div class="mt-4 grid gap-2 sm:grid-cols-2">
               <Button
+                v-if="canComplete"
                 variant="outline"
                 class="justify-start border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800"
                 :disabled="tarefa.status === 'Concluido'"
@@ -171,6 +296,7 @@ onMounted(loadTarefa)
                 </RouterLink>
               </Button>
               <Button
+                v-if="canDelete"
                 variant="outline"
                 class="justify-start text-red-600 hover:bg-red-50 hover:text-red-700 sm:col-span-2"
                 @click="deleteTask"
@@ -179,6 +305,10 @@ onMounted(loadTarefa)
                 Excluir
               </Button>
             </div>
+            <p v-if="!canComplete && !canDelete" class="mt-3 text-xs text-gray-500">
+              Apenas o administrador da horta ou o responsavel atual podem concluir esta tarefa.
+              Excluir e restrito ao administrador.
+            </p>
           </article>
         </section>
       </template>

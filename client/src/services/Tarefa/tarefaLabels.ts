@@ -40,3 +40,15 @@ export function statusClasses(status: TaskStatus) {
 export function tipoIcon(tipo: TaskTipo) {
   return TIPO_ICONS[tipo] ?? ClipboardList
 }
+
+// Aceita 'YYYY-MM-DD' (DateOnly da API) ou um Date/ISO completo e devolve 'DD/MM/AAAA'
+export function formatDateBr(value?: string | null) {
+  if (!value) return '-'
+
+  const datePart = value.slice(0, 10)
+  const [year, month, day] = datePart.split('-')
+
+  if (!year || !month || !day) return value
+
+  return `${day}/${month}/${year}`
+}

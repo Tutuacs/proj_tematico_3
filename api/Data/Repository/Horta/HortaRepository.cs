@@ -40,9 +40,10 @@ public class HortaRepository(ApplicationDbContext db) : IHortaRepository
             .FirstOrDefaultAsync();
     }
 
-    public async Task<List<HortaResumoDto>> GetAllAsync()
+    public async Task<List<HortaResumoDto>> GetAllAsync(string perfilId)
     {
         return await _db.Hortas
+            .Where(h => _db.Membros.Any(m => m.HortaId == h.Id && m.PerfilId == perfilId))
             .Select(h => new HortaResumoDto
             {
                 Id = h.Id,

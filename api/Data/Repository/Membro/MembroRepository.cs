@@ -78,4 +78,12 @@ public class MembroRepository(ApplicationDbContext db) : IMembroRepository
         return await _db.Membros
             .FirstOrDefaultAsync(m => m.HortaId == hortaId && m.PerfilId == perfilId);
     }
+
+    public async Task<List<ProfileDb>> GetAvailableProfilesForHortaAsync(int hortaId)
+    {
+        return await _db.Profiles
+            .Where(p => !_db.Membros.Any(m => m.HortaId == hortaId && m.PerfilId == p.Id))
+            .OrderBy(p => p.Name)
+            .ToListAsync();
+    }
 }

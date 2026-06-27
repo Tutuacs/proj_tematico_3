@@ -33,8 +33,6 @@ const userDisplayName = computed(() => authStore.user?.name || authStore.user?.e
 const isHortaRoute = computed(() => route.path === '/horta')
 const isPlantasRoute = computed(() => route.path === '/plantas')
 const isTarefasRoute = computed(() => route.path === '/tarefas')
-const hortaId = computed(() => route.params.id?.toString() ?? '')
-const isHortaDetailRoute = computed(() => route.path.startsWith('/horta/') && !!hortaId.value)
 
 function isMenuItemActive(path: string) {
   if (path === '/horta') {
@@ -117,26 +115,6 @@ function handleLogout() {
           Nova tarefa
         </RouterLink>
       </Button>
-
-      <div v-if="isHortaDetailRoute" class="space-y-2">
-        <Button
-          as-child
-          variant="outline"
-          size="sm"
-          class="w-full border-blue-300 text-blue-700 hover:bg-blue-50 hover:text-blue-800"
-        >
-          <RouterLink :to="`/horta/${hortaId}/plantios`">Ver plantios</RouterLink>
-        </Button>
-
-        <Button
-          as-child
-          variant="outline"
-          size="sm"
-          class="w-full border-blue-300 text-blue-700 hover:bg-blue-50 hover:text-blue-800"
-        >
-          <RouterLink :to="`/horta/${hortaId}/membros`">Ver membros</RouterLink>
-        </Button>
-      </div>
     </SidebarFooter>
   </Sidebar>
 </template>

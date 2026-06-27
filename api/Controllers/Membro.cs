@@ -59,6 +59,24 @@ public class MembroController(IMembroService membroService) : ControllerBase
         });
     }
 
+    [HttpGet("add/members/horta/{hortaId}")]
+    public async Task<IActionResult> GetAddMembersByHortaId(int hortaId)
+    {
+        var result = await _membroService.GetAddMembersByHortaIdAsync(hortaId);
+        var mappedData = result.Data?.Select(p => new ProfileResponseDto
+        {
+            Id = p.Id,
+            Name = p.Name,
+            Email = p.Email
+        }).ToList() ?? new List<ProfileResponseDto>();
+
+        return StatusCode((int)result.StatusCode, new ApiResponse<object>
+        {
+            Data = mappedData,
+            Message = result.Message
+        });
+    }
+
     [HttpGet("horta/{hortaId}")]
     public async Task<IActionResult> GetByHortaId(int hortaId)
     {

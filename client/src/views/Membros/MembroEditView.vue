@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { getMembrosByPerfil, deleteMembro } from '@/services/Membro/membro.service'
 import { useRoute, useRouter } from 'vue-router'
@@ -54,7 +54,20 @@ async function load() {
   }
 }
 
+// E o proprio usuario logado quem esta sendo editado nesta tela?
+const isEditingSelf = computed(() => !!authStore.user?.id && membro.value?.perfilId === authStore.user.id)
+
+// Apenas admin da horta pode alterar a role, e nunca a propria role
+const canEditRole = computed(() => isCurrentUserAdmin.value && !isEditingSelf.value)
+
 async function save() {
+  if (!canEditRole.value) {
+    error.value = isEditingSelf.value
+      ? 'Você não pode alterar sua própria role.'
+      : 'Apenas administradores da horta podem alterar a role de um membro.'
+    return
+  }
+
   try {
     isSaving.value = true
     await updateMembro(membroId, { role: membro.value.role })
@@ -153,7 +166,8 @@ onMounted(load)
 
             <div>
               <label class="block text-xs font-semibold text-gray-500 uppercase mb-2">Alterar Cargo</label>
-              <div class="grid gap-3">
+
+              <div v-if="canEditRole" class="grid gap-3">
                 <button
                   v-for="option in roleOptions"
                   :key="option.value"
@@ -174,6 +188,13 @@ onMounted(load)
                   </div>
                 </button>
               </div>
+
+              <p v-else-if="isEditingSelf" class="text-sm text-gray-500">
+                Você não pode alterar sua própria role.
+              </p>
+              <p v-else class="text-sm text-gray-500">
+                Apenas administradores da horta podem alterar a role de um membro.
+              </p>
             </div>
 
             <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -187,6 +208,7 @@ onMounted(load)
         <!-- Actions -->
         <div class="flex gap-3 sticky bottom-0 bg-white p-4 rounded-lg border">
           <button
+            v-if="canEditRole"
             @click="save"
             :disabled="isSaving"
             class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors"
@@ -201,7 +223,7 @@ onMounted(load)
             Cancelar
           </button>
           <button
-            v-if="isCurrentUserAdmin"
+            v-if="isCurrentUserAdmin && !isEditingSelf"
             @click="removeMember"
             :disabled="isSaving"
             class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors"
